@@ -29,6 +29,10 @@ jobs:
     # small, for example ["self-hosted","linux","x64"].
     runs-on: ${{ fromJSON(vars.BUILD_RUNNER_JSON || '["ubuntu-latest"]') }}
     timeout-minutes: 240
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release: ${{ steps.version.outputs.release }}
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
