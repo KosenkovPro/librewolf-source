@@ -81,6 +81,9 @@ jobs:
     # Without them there is nothing to build with, so the test builds are
     # skipped instead of failing.
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     outputs:
       available: ${{ steps.check.outputs.available }}
     steps:
@@ -88,12 +91,15 @@ jobs:
         id: check
         env:
           OWNER: ${{ vars.GHCR_OWNER || 'kosenkovpro' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
           available=true
           for target in linux windows macos; do
-            token="$(curl -fsSL "https://ghcr.io/token?scope=repository:$OWNER/buildenv:pull&service=ghcr.io" | jq -r '.token // empty' || true)"
+            token="$(curl -fsSL -u "${{ github.actor }}:$GH_TOKEN" \
+              "https://ghcr.io/token?scope=repository:$OWNER/buildenv:pull&service=ghcr.io" |
+              jq -r '.token // empty' || true)"
             if [ -z "$token" ]; then
               echo "::warning::Could not get a token for the container registry"
               available=false
