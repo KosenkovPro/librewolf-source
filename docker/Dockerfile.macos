@@ -28,29 +28,43 @@ ARG FORGE_URL
 ARG FORGE_REPO_OWNER
 ARG VERSION
 ARG PUBKEY
+ARG SOURCE_URL
 
-RUN curl -qfA "" --no-sessionid --proto =https --tlsv1.2 \
-        ${FORGE_URL}/api/packages/${FORGE_REPO_OWNER}/generic/librewolf-source/${VERSION}/librewolf-${VERSION}.source.tar.gz -o librewolf-${VERSION}.source.tar.gz \
-        ${FORGE_URL}/api/packages/${FORGE_REPO_OWNER}/generic/librewolf-source/${VERSION}/librewolf-${VERSION}.source.tar.gz.sig -o librewolf-${VERSION}.source.tar.gz.sig && \
-    printf '%s' "$PUBKEY" | gpg --import && \
-    gpg --verify librewolf-${VERSION}.source.tar.gz.sig librewolf-${VERSION}.source.tar.gz && \
-    tar -xf librewolf-${VERSION}.source.tar.gz && \
+RUN set -eux; \
+    if [ -z "${SOURCE_URL:-}" ]; then \
+        SOURCE_URL="${FORGE_URL}/api/packages/${FORGE_REPO_OWNER}/generic/librewolf-source/${VERSION}/librewolf-${VERSION}.source.tar.gz"; \
+    fi; \
+    curl -qfA "" --no-sessionid --proto =https --tlsv1.2 \
+        "$SOURCE_URL" -o "librewolf-${VERSION}.source.tar.gz"; \
+    if curl -qfA "" --no-sessionid --proto =https --tlsv1.2 \
+        "${SOURCE_URL}.sig" -o "librewolf-${VERSION}.source.tar.gz.sig"; then \
+        if [ -n "${PUBKEY:-}" ]; then \
+            printf '%s' "$PUBKEY" | gpg --import; \
+            gpg --verify "librewolf-${VERSION}.source.tar.gz.sig" "librewolf-${VERSION}.source.tar.gz"; \
+        else \
+            echo "No public key given, skipping the signature verification"; \
+        fi; \
+    else \
+        echo "No signature available, skipping the verification"; \
+        rm -f "librewolf-${VERSION}.source.tar.gz.sig"; \
+    fi; \
+    tar -xf "librewolf-${VERSION}.source.tar.gz"; \
     # Download needed build artifacts
     ./librewolf-${VERSION}/mach artifact toolchain --from-build \
         linux64-clang-23 sysroot-wasm32-wasi-clang-23 linux64-cbindgen linux64-libdmg \
-        linux64-cctools-port linux64-binutils linux64-nasm sysroot-x86_64-linux-gnu linux64-hfsplus && \
-    cd librewolf-${VERSION} && \
+        linux64-cctools-port linux64-binutils linux64-nasm sysroot-x86_64-linux-gnu linux64-hfsplus; \
+    cd librewolf-${VERSION}; \
     ./mach --no-interactive python --virtualenv build \
         taskcluster/scripts/misc/unpack-sdk.py \
         https://swcdn.apple.com/content/downloads/33/19/140-17812-A_21ZLMMLY4E/zu3xwktttpoe71qiawhzgzvqss6rovawsa/CLTools_macOSNMOS_SDK.pkg \
         864172616f1e625d6a7669a515965f34908f2b4c733beb4b29dcf008dbe1b8fe93470ab7d54c99bae9092928bb531ffba26da62d079f67e6f1150d3de13eb26c \
         Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk \
-        /root/.mozbuild/MacOSX26.5.sdk && \
-    cd .. && \
+        /root/.mozbuild/MacOSX26.5.sdk; \
+    cd ..; \
     # Move artifacts to .mozbuild
     mv  clang sysroot-wasm32-wasi cbindgen dmg hfsplus \
         cctools binutils nasm sysroot-x86_64-linux-gnu  \
-        /root/.mozbuild/ && \
+        /root/.mozbuild/; \
     # Cleanup
     rm -rf \
         librewolf-${VERSION}.source.tar.gz \

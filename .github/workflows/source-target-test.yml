@@ -1,0 +1,161 @@
+name: Create Test Builds
+
+on:
+  push:
+    branches:
+      - main
+      - beta
+  workflow_dispatch:
+    inputs:
+      Target:
+        description: 'Target Platform'
+        required: true
+        default: 'linux'
+        type: choice
+        options:
+          - all
+          - linux
+          - windows
+          - macos
+      Version:
+        description: 'Firefox Version'
+        required: true
+        default: 'stable'
+        type: choice
+        options:
+          - latest
+          - beta
+          - rc
+          - stable
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+permissions:
+  contents: read
+
+concurrency:
+  group: source-target-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-version:
+    if: ${{ !(github.event_name == 'pull_request' && github.head_ref == 'beta' && github.base_ref == 'main') }}
+    runs-on: ubuntu-latest
+    outputs:
+      ff_version: ${{ steps.detect.outputs.FF_VERSION }}
+      ff_channel: ${{ steps.detect.outputs.FF_CHANNEL }}
+      ff_build: ${{ steps.detect.outputs.FF_BUILD }}
+      ff_beta_suffix: ${{ steps.detect.outputs.FF_BETA_SUFFIX }}
+      ff_display: ${{ steps.detect.outputs.FF_DISPLAY }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Detect Firefox Version
+        id: detect
+        run: |
+          chmod +x ./scripts/detect-firefox-version.sh
+          ./scripts/detect-firefox-version.sh --channel "${{ (github.ref == 'refs/heads/beta' || github.base_ref == 'beta') && 'latest' || inputs.Version || 'stable' }}" >> "$GITHUB_OUTPUT"
+
+          # Read outputs
+          while IFS='=' read -r key value; do
+            export "$key=$value"
+          done < "$GITHUB_OUTPUT"
+
+          echo "========================================"
+          echo "Firefox Version:"
+          echo "========================================"
+          echo "Version:     $FF_VERSION"
+          echo "Channel:     $FF_CHANNEL"
+          echo "Build:       $FF_BUILD"
+          echo "Beta Suffix: $FF_BETA_SUFFIX"
+          echo "Display:     $FF_DISPLAY"
+          echo "========================================"
+
+  test-linux:
+    if: inputs.Target == 'all' || inputs.Target == 'linux' || inputs.Target == ''
+    runs-on: ${{ fromJSON(vars.BUILD_RUNNER_JSON || '["ubuntu-latest"]') }}
+    timeout-minutes: 720
+    container:
+      image: ghcr.io/${{ vars.GHCR_OWNER || 'kosenkovpro' }}/buildenv:linux
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Test Build
+        run: |
+          make build TARGET=x86_64-pc-linux-gnu
+          make package
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-test
+          path: |
+            librewolf-*.tar.xz
+          retention-days: ${{ github.event_name == 'push' && 3 || 14 }}
+
+  test-windows:
+    if: inputs.Target == 'all' || inputs.Target == 'windows'
+    runs-on: ${{ fromJSON(vars.BUILD_RUNNER_JSON || '["ubuntu-latest"]') }}
+    timeout-minutes: 720
+    container:
+      image: ghcr.io/${{ vars.GHCR_OWNER || 'kosenkovpro' }}/buildenv:windows
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Test Build
+        run: |
+          make build TARGET=x86_64-pc-windows-msvc
+          make package
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-test
+          path: |
+            librewolf-*.zip
+          retention-days: ${{ github.event_name == 'push' && 3 || 14 }}
+
+  test-macos:
+    if: inputs.Target == 'all' || inputs.Target == 'macos'
+    runs-on: ${{ fromJSON(vars.BUILD_RUNNER_JSON || '["ubuntu-latest"]') }}
+    timeout-minutes: 720
+    container:
+      image: ghcr.io/${{ vars.GHCR_OWNER || 'kosenkovpro' }}/buildenv:macos
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Test Build
+        run: |
+          make build TARGET=aarch64-apple-darwin
+          make package
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-test
+          path: |
+            librewolf-*.dmg
+          retention-days: ${{ github.event_name == 'push' && 3 || 14 }}

@@ -1,0 +1,125 @@
+name: Create Source Code Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Firefox version, defaults to the version in the Makefile'
+        required: false
+        default: ''
+      release:
+        description: 'Release number, defaults to the release in the Makefile'
+        required: false
+        default: ''
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: source-release
+  cancel-in-progress: false
+
+jobs:
+  build-source:
+    # A full Firefox source tree needs a lot of disk, set the repository
+    # variable BUILD_RUNNER_JSON to a bigger runner if the default one is too
+    # small, for example ["self-hosted","linux","x64"].
+    runs-on: ${{ fromJSON(vars.BUILD_RUNNER_JSON || '["ubuntu-latest"]') }}
+    timeout-minutes: 240
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Install the build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates curl git-lfs gnupg pigz xz-utils
+          git lfs install
+
+      - name: Resolve the version
+        id: version
+        run: |
+          version="${{ inputs.version }}"
+          if [ -z "$version" ]; then
+            version="$(make version)"
+          fi
+          release="${{ inputs.release }}"
+          if [ -z "$release" ]; then
+            release="$(make release)"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "release=$release" >> "$GITHUB_OUTPUT"
+          echo "tag=$version-$release" >> "$GITHUB_OUTPUT"
+
+      - name: Make the LibreWolf source archive
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+        run: make tarball
+
+      - name: Upload the artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: librewolf-source
+          path: |
+            librewolf-*.source.tar.gz
+            librewolf-*.source.tar.gz.sha256sum
+            librewolf-*.source.tar.gz.sha512sum
+            librewolf-*.source.tar.gz.sig
+          retention-days: 7
+          if-no-files-found: error
+
+  publish-release:
+    needs: [build-source]
+    runs-on: ${{ fromJSON(vars.BUILD_RUNNER_JSON || '["ubuntu-latest"]') }}
+    timeout-minutes: 30
+    steps:
+      - name: Download the artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: librewolf-source
+          path: dist
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.build-source.outputs.tag }}
+        run: |
+          set -euo pipefail
+          cd dist
+
+          {
+            echo "## LibreWolf Source Release v$TAG"
+            echo
+            echo "Built by workflow [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          } > notes.md
+
+          files=()
+          for file in librewolf-*.source.tar.gz \
+                      librewolf-*.source.tar.gz.sha256sum \
+                      librewolf-*.source.tar.gz.sha512sum \
+                      librewolf-*.source.tar.gz.sig; do
+            if [ -e "$file" ]; then
+              files+=("$file")
+            fi
+          done
+
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "::error::No source archive was built"
+            exit 1
+          fi
+
+          echo "-> Publishing ${#files[@]} files to the release $TAG"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "-> The release $TAG already exists, updating it"
+            gh release edit "$TAG" --title "LibreWolf Source v$TAG" --notes-file notes.md
+            gh release upload "$TAG" --clobber "${files[@]}"
+          else
+            gh release create "$TAG" --title "LibreWolf Source v$TAG" --notes-file notes.md "${files[@]}"
+          fi
