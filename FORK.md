@@ -57,6 +57,60 @@ make dir && make bootstrap
 make build && make package
 ```
 
+## CI on GitHub Actions
+
+The upstream CI runs on Forgejo with self-hosted runners, a package registry and an S3
+bucket. This fork ports it to GitHub Actions.
+
+| Workflow | What it does |
+| --- | --- |
+| [`source-release.yml`](.github/workflows/source-release.yml) | Builds the LibreWolf source archive and publishes it as a GitHub release. |
+| [`build-images.yml`](.github/workflows/build-images.yml) | Builds the Docker build environments (`docker/Dockerfile.*`) and pushes them to `ghcr.io/kosenkovpro/buildenv:<target>`. |
+| [`source-target-test.yml`](.github/workflows/source-target-test.yml) | Builds the browser for Linux, Windows and macOS to test the patches. |
+| [`ci.yml`](.github/workflows/ci.yml) | Checks the shell scripts, the Makefile and the workflow files. |
+| [`sync-upstream.yml`](.github/workflows/sync-upstream.yml) | Opens a pull request with the changes of the upstream. |
+
+### Where the artefacts live
+
+The upstream Forgejo instance has a package registry, an S3 bucket and a CDN. GitHub has
+none of them for a personal account, so this fork uses GitHub releases instead:
+
+* the source archive is an asset of the release `librewolf-<version>-<release>` in
+  `KosenkovPro/librewolf-source`;
+* the build environments are container images in the GitHub container registry;
+* the packages are the assets of the release in `KosenkovPro/librewolf-bsys6`.
+
+The Dockerfiles take a `SOURCE_URL` build argument, so the images fetch the source archive
+from a GitHub release instead of the package registry. The signature verification is
+skipped when no public key is given.
+
+### Repository settings
+
+| Name | Kind | Purpose |
+| --- | --- | --- |
+| `BUILD_RUNNER_JSON` | variable | The runner for the build jobs, for example `["self-hosted","linux","x64"]`. Defaults to `["ubuntu-latest"]`. |
+| `GHCR_OWNER` | variable | The owner of the images in the container registry. Defaults to `kosenkovpro`. |
+| `SIGNING_KEY` | secret | The GPG key used to sign the source archive. |
+| `PUBKEY` | variable | The public key the images use to verify the source archive. |
+| `DOCKER_GPG_KEY` | variable | The key of the Docker package repository, it is optional. |
+| `OSSIGN_ASC_KEY` | variable | The key of the OSSign package repository, it is optional. |
+
+### The order of the workflows
+
+1. Run **Create Source Code Release** — it publishes the source archive as a GitHub
+   release.
+2. Run **Docker Image** — it builds the build environments from that source archive.
+3. Run **Create Test Builds** — it builds the browser with the images from step 2.
+
+### What is not ported
+
+* A full Firefox build needs about 100 GB of disk and a lot of CPU time. The standard
+  GitHub runners have about 14 GB, so the build jobs need a bigger runner — set
+  `BUILD_RUNNER_JSON` to a self-hosted or a larger runner. The source release fits on a
+  standard runner.
+* The auto-update distribution needs the upstream S3 bucket and CDN, the update manifests
+  are published as release assets instead.
+
 ## Licence
 
 LibreWolf is licensed under the **Mozilla Public License 2.0** (see [`LICENSE`](./LICENSE)).

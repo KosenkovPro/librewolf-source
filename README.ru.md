@@ -45,23 +45,34 @@ LibreWolf за свою историю сменил несколько хост�
 перенесены одним изменением, так что история проекта доступна целиком и любой
 upstream-коммит можно найти.
 
-На данный момент отличий от upstream ровно два, оба добавлены форком:
+Вот и все отличия от upstream, все они добавлены форком:
 
 | Файл | Назначение |
 | --- | --- |
-| [`FORK.md`](./FORK.md) | Описание форка: таблица upstream, команды синхронизации, сборка |
+| [`FORK.md`](./FORK.md) | Описание форка: таблица upstream, команды синхронизации, сборка, настройки CI |
 | [`.github/workflows/sync-upstream.yml`](./.github/workflows/sync-upstream.yml) | Workflow GitHub Actions: раз в сутки забирает изменения с upstream и открывает pull request |
+| [`.github/workflows/source-release.yml`](./.github/workflows/source-release.yml) | Workflow GitHub Actions: собирает source-тарбол и публикует его как GitHub Release |
+| [`.github/workflows/build-images.yml`](./.github/workflows/build-images.yml) | Workflow GitHub Actions: собирает образы окружения сборки и отправляет их в GHCR |
+| [`.github/workflows/source-target-test.yml`](./.github/workflows/source-target-test.yml) | Workflow GitHub Actions: тест-сборки для Linux, Windows и macOS |
+| [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) | Workflow GitHub Actions: проверяет скрипты и файлы workflow |
 
-Планируемые изменения:
+Dockerfile-ы в каталоге [`docker/`](./docker) принимают build-аргумент `SOURCE_URL`, поэтому
+образы могут брать source-тарбол из GitHub Release, а не из Package Registry Forgejo.
 
-- **Перенос CI с Forgejo на GitHub Actions.** Upstream собирает в контейнерах
-  `librewolf.dev/librewolf/buildenv:*` на собственных раннерах и публикует артефакты
-  в S3 и Package Registry Forgejo. Форк собирает те же образы из Dockerfile-ов
-  в каталоге [`docker/`](./docker) и публикует их в GHCR, а тест-сборки и релиз
-  source-тарбола переводит на GitHub Actions и GitHub Releases.
-- **Развитие проекта ведётся здесь.** Новые патчи, настройки и темы вносятся
-  в этот репозиторий; изменения из upstream приезжают через тот же
-  workflow синхронизации.
+**CI перенесён с Forgejo на GitHub Actions**:
+
+- upstream собирает в контейнерах `librewolf.dev/librewolf/buildenv:*` на собственных
+  раннерах и публикует артефакты в S3 и Package Registry Forgejo;
+- форк собирает те же образы из Dockerfile-ов в каталоге [`docker/`](./docker) и
+  отправляет их в `ghcr.io/kosenkovpro/buildenv:*`, а source-тарбол и пакеты
+  публикуются как GitHub Releases.
+
+Полная сборка Firefox требует около 100 ГБ диска, поэтому для сборочных заданий нужен
+более мощный раннер — задайте переменную репозитория `BUILD_RUNNER_JSON` (self-hosted
+или раннер большего размера). Подробности в [`FORK.md`](./FORK.md).
+
+Развитие проекта ведётся здесь: новые патчи, настройки и темы вносятся в этот
+репозиторий, а изменения из upstream приезжают через тот же workflow синхронизации.
 
 Оригинальные `.forgejo/workflows/` сохранены как есть — они нужны для сверки
 с upstream и не мешают GitHub Actions.

@@ -45,23 +45,34 @@ The fork was created with **full history** — 2338 upstream commits, 247 tags a
 branches came across in one change, so the entire project history is available and
 any upstream commit can be found.
 
-So far there are exactly two differences from upstream, both added by the fork:
+These are the differences from upstream, all added by the fork:
 
 | File | Purpose |
 | --- | --- |
-| [`FORK.md`](./FORK.md) | Fork description: upstream table, sync commands, build instructions |
+| [`FORK.md`](./FORK.md) | Fork description: upstream table, sync commands, build instructions, CI settings |
 | [`.github/workflows/sync-upstream.yml`](./.github/workflows/sync-upstream.yml) | GitHub Actions workflow: fetches upstream changes daily and opens a pull request |
+| [`.github/workflows/source-release.yml`](./.github/workflows/source-release.yml) | GitHub Actions workflow: builds the source archive and publishes it as a GitHub release |
+| [`.github/workflows/build-images.yml`](./.github/workflows/build-images.yml) | GitHub Actions workflow: builds the build environments and pushes them to GHCR |
+| [`.github/workflows/source-target-test.yml`](./.github/workflows/source-target-test.yml) | GitHub Actions workflow: test builds for Linux, Windows and macOS |
+| [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) | GitHub Actions workflow: checks the scripts and the workflow files |
 
-Planned changes:
+The Dockerfiles in [`docker/`](./docker) take a `SOURCE_URL` build argument, so the images
+can take the source archive from a GitHub release instead of the Forgejo package registry.
 
-- **Porting CI from Forgejo to GitHub Actions.** Upstream builds inside
-  `librewolf.dev/librewolf/buildenv:*` containers on its own runners and publishes
-  artifacts to S3 and the Forgejo Package Registry. The fork builds the same images
-  from the Dockerfiles in [`docker/`](./docker) and publishes them to GHCR, and
-  moves test builds and the source-tarball release to GitHub Actions and GitHub
-  Releases.
-- **Development continues here.** New patches, settings and theming land in this
-  repository; upstream changes arrive through the same sync workflow.
+The **CI is ported from Forgejo to GitHub Actions**:
+
+- upstream builds inside the `librewolf.dev/librewolf/buildenv:*` containers on its own
+  runners and publishes the artefacts to S3 and to the Forgejo Package Registry;
+- the fork builds the same images from the Dockerfiles in [`docker/`](./docker) and pushes
+  them to `ghcr.io/kosenkovpro/buildenv:*`, and the source archive and the packages are
+  published as GitHub releases.
+
+A full Firefox build needs about 100 GB of disk, so the build jobs expect a bigger runner
+— set the repository variable `BUILD_RUNNER_JSON` to a self-hosted or a larger runner. The
+details are in [`FORK.md`](./FORK.md).
+
+Development continues here: new patches, settings and theming land in this repository, and
+the upstream changes arrive through the same sync workflow.
 
 The original `.forgejo/workflows/` are kept as they are — they are needed for
 comparison against upstream and do not interfere with GitHub Actions.
