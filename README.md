@@ -4,11 +4,79 @@
 
 # LibreWolf
 
+**[English](./README.md)** | [Русский](./README.ru.md)
+
 This repository contains all the patches and theming that make up LibreWolf,
 as well as the LibreWolf preferences (in [settings/](./settings)) and the
 scripts and Makefile to build LibreWolf.
 
 </div>
+
+> [!IMPORTANT]
+> ## This is a fork of LibreWolf
+>
+> This repository is a **fork of [LibreWolf](https://librewolf.dev/librewolf/source)**,
+> moved from Codeberg to GitHub so that development can continue here.
+> Below is where the fork came from, which repositories it refers to, and what
+> it changes. Details are in [FORK.md](./FORK.md).
+
+## Where the fork came from
+
+LibreWolf has changed hosting several times over its history. The full chain:
+
+| Repository | Role | Link |
+| --- | --- | --- |
+| **`librewolf/source`** (librewolf.dev) | **Canonical upstream**, the project's main repository | <https://librewolf.dev/librewolf/source> |
+| **`librewolf/source`** (Codeberg) | Mirror of the canonical repository | <https://codeberg.org/librewolf/source> |
+| **`librewolf/bsys6`** (librewolf.dev) | Upstream build system | <https://librewolf.dev/librewolf/bsys6> |
+| **`librewolf/bsys6`** (Codeberg) | Mirror of the build system | <https://codeberg.org/librewolf/bsys6> |
+| `librewolf-community/browser/source` (GitLab) | The project's original home | <https://gitlab.com/librewolf-community/browser/source> |
+| `librewolf-community/browser-linux` (GitHub) | The old GitHub home, archived and abandoned | <https://github.com/librewolf-community/browser-linux> |
+| **`KosenkovPro/librewolf-source`** | **This fork** | <https://github.com/KosenkovPro/librewolf-source> |
+| **`KosenkovPro/librewolf-bsys6`** | Fork of the build system | <https://github.com/KosenkovPro/librewolf-bsys6> |
+
+The project's history: first GitHub (`librewolf-community`), then GitLab, then
+Codeberg, and finally its own Forgejo instance at `librewolf.dev`. The old GitHub
+and GitLab repositories are archived and no longer receive commits.
+
+## What this fork changes
+
+The fork was created with **full history** — 2338 upstream commits, 247 tags and 40
+branches came across in one change, so the entire project history is available and
+any upstream commit can be found.
+
+So far there are exactly two differences from upstream, both added by the fork:
+
+| File | Purpose |
+| --- | --- |
+| [`FORK.md`](./FORK.md) | Fork description: upstream table, sync commands, build instructions |
+| [`.github/workflows/sync-upstream.yml`](./.github/workflows/sync-upstream.yml) | GitHub Actions workflow: fetches upstream changes daily and opens a pull request |
+
+Planned changes:
+
+- **Porting CI from Forgejo to GitHub Actions.** Upstream builds inside
+  `librewolf.dev/librewolf/buildenv:*` containers on its own runners and publishes
+  artifacts to S3 and the Forgejo Package Registry. The fork builds the same images
+  from the Dockerfiles in [`docker/`](./docker) and publishes them to GHCR, and
+  moves test builds and the source-tarball release to GitHub Actions and GitHub
+  Releases.
+- **Development continues here.** New patches, settings and theming land in this
+  repository; upstream changes arrive through the same sync workflow.
+
+The original `.forgejo/workflows/` are kept as they are — they are needed for
+comparison against upstream and do not interfere with GitHub Actions.
+
+## Syncing with upstream
+
+```bash
+git fetch upstream                       # fetch changes from Codeberg
+git log --oneline HEAD..upstream/main    # see what changed
+git merge upstream/main                  # merge upstream into your branch
+git push origin main                     # push the result to this fork
+```
+
+Regular syncing happens automatically: the workflow opens a pull request that you
+review and merge by hand — nothing is applied blindly.
 
 ## Infra
 
@@ -113,7 +181,7 @@ or compile directly with this repository.
 1. Clone this repository with Git:
 
    ```bash
-   git clone --recursive git@librewolf.dev:librewolf/source.git librewolf-source --depth=1 && cd librewolf-source
+   git clone --recursive https://github.com/KosenkovPro/librewolf-source.git librewolf-source && cd librewolf-source
    ```
 
 2. Build LibreWolf source code,
