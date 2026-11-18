@@ -76,8 +76,43 @@ jobs:
           echo "Display:     $FF_DISPLAY"
           echo "========================================"
 
+  check-images:
+    # The test builds run inside the images of the "Docker Image" workflow.
+    # Without them there is nothing to build with, so the test builds are
+    # skipped instead of failing.
+    runs-on: ubuntu-latest
+    outputs:
+      available: ${{ steps.check.outputs.available }}
+    steps:
+      - name: Check the build images
+        id: check
+        env:
+          OWNER: ${{ vars.GHCR_OWNER || 'kosenkovpro' }}
+        run: |
+          set -euo pipefail
+
+          available=true
+          for target in linux windows macos; do
+            token="$(curl -fsSL "https://ghcr.io/token?scope=repository:$OWNER/buildenv:pull&service=ghcr.io" | jq -r '.token // empty' || true)"
+            if [ -z "$token" ]; then
+              echo "::warning::Could not get a token for the container registry"
+              available=false
+              break
+            fi
+            if ! curl -fsS -o /dev/null \
+              -H "Authorization: Bearer $token" \
+              -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json" \
+              "https://ghcr.io/v2/$OWNER/buildenv/manifests/$target"; then
+              echo "::warning::The image ghcr.io/$OWNER/buildenv:$target is not published yet, the test build is skipped. Run the 'Docker Image' workflow first."
+              available=false
+            fi
+          done
+
+          echo "available=$available" >> "$GITHUB_OUTPUT"
+
   test-linux:
-    if: inputs.Target == 'all' || inputs.Target == 'linux' || inputs.Target == ''
+    needs: [check-images]
+    if: needs.check-images.outputs.available == 'true' && (inputs.Target == 'all' || inputs.Target == 'linux' || inputs.Target == '')
     runs-on: ${{ fromJSON(vars.BUILD_RUNNER_JSON || '["ubuntu-latest"]') }}
     timeout-minutes: 720
     container:
@@ -105,7 +140,8 @@ jobs:
           retention-days: ${{ github.event_name == 'push' && 3 || 14 }}
 
   test-windows:
-    if: inputs.Target == 'all' || inputs.Target == 'windows'
+    needs: [check-images]
+    if: needs.check-images.outputs.available == 'true' && (inputs.Target == 'all' || inputs.Target == 'windows')
     runs-on: ${{ fromJSON(vars.BUILD_RUNNER_JSON || '["ubuntu-latest"]') }}
     timeout-minutes: 720
     container:
@@ -133,7 +169,8 @@ jobs:
           retention-days: ${{ github.event_name == 'push' && 3 || 14 }}
 
   test-macos:
-    if: inputs.Target == 'all' || inputs.Target == 'macos'
+    needs: [check-images]
+    if: needs.check-images.outputs.available == 'true' && (inputs.Target == 'all' || inputs.Target == 'macos')
     runs-on: ${{ fromJSON(vars.BUILD_RUNNER_JSON || '["ubuntu-latest"]') }}
     timeout-minutes: 720
     container:
