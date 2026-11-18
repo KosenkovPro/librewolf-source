@@ -111,6 +111,12 @@ skipped when no public key is given.
 * The auto-update distribution needs the upstream S3 bucket and CDN, the update manifests
   are published as release assets instead.
 
+### The upstream workflows that are not ported
+
+| Upstream workflow | Why |
+| --- | --- |
+| `ubo-assets.yaml` | It uploads `assets/uBOAssets.json` to the upstream S3 bucket, the browser downloads it from the upstream CDN. Without a CDN there is nowhere to publish it. |
+
 ## Licence
 
 LibreWolf is licensed under the **Mozilla Public License 2.0** (see [`LICENSE`](./LICENSE)).
