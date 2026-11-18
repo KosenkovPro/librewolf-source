@@ -1,0 +1,31 @@
+Add `about:librewolf` easter egg page
+---
+diff --git a/docshell/base/nsAboutRedirector.cpp b/docshell/base/nsAboutRedirector.cpp
+index ce1b280..5a17221 100644
+--- a/docshell/base/nsAboutRedirector.cpp
++++ b/docshell/base/nsAboutRedirector.cpp
+@@ -153,7 +153,7 @@ static const RedirEntry kRedirMap[] = {
+          nsIAboutModule::URI_MUST_LOAD_IN_CHILD |
+          nsIAboutModule::URI_CAN_LOAD_IN_PRIVILEGEDABOUT_PROCESS |
+          nsIAboutModule::IS_SECURE_CHROME_UI},
+-    {"mozilla", "chrome://global/content/mozilla.html",
++    {"librewolf", "chrome://global/content/librewolf.html",
+      nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT},
+ #if !defined(ANDROID) && !defined(XP_WIN)
+     {"webauthn", "chrome://global/content/aboutWebauthn.html",
+
+diff --git a/toolkit/content/jar.mn b/toolkit/content/jar.mn
+index 2591420..382f97b 100644
+--- a/toolkit/content/jar.mn
++++ b/toolkit/content/jar.mn
+@@ -61,8 +61,8 @@ toolkit.jar:
+    content/global/filepicker.properties
+    content/global/customElements.js
+    content/global/globalOverlay.js
+-   content/global/mozilla.html
+-   content/global/aboutMozilla.css
++   content/global/librewolf.html
++   content/global/aboutLibreWolf.css
+    content/global/preferencesBindings.js
+    content/global/preferences/AsyncSetting.mjs  (preferences/AsyncSetting.mjs)
+    content/global/preferences/Preference.mjs    (preferences/Preference.mjs)
