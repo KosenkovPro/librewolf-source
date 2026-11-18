@@ -92,6 +92,7 @@ jobs:
         with:
           name: librewolf-source
           path: dist
+          merge-multiple: true
 
       - name: Create the release
         env:
@@ -99,7 +100,6 @@ jobs:
           TAG: ${{ needs.build-source.outputs.tag }}
         run: |
           set -euo pipefail
-          cd dist
 
           {
             echo "## LibreWolf Source Release v$TAG"
@@ -108,17 +108,15 @@ jobs:
           } > notes.md
 
           files=()
-          for file in librewolf-*.source.tar.gz \
-                      librewolf-*.source.tar.gz.sha256sum \
-                      librewolf-*.source.tar.gz.sha512sum \
-                      librewolf-*.source.tar.gz.sig; do
-            if [ -e "$file" ]; then
-              files+=("$file")
-            fi
-          done
+          while IFS= read -r file; do
+            files+=("$file")
+          done < <(find dist -type f \( -name 'librewolf-*.source.tar.gz' \
+                                      -o -name 'librewolf-*.source.tar.gz.sha256sum' \
+                                      -o -name 'librewolf-*.source.tar.gz.sha512sum' \
+                                      -o -name 'librewolf-*.source.tar.gz.sig' \) | sort)
 
           if [ "${#files[@]}" -eq 0 ]; then
-            echo "::error::No source archive was built"
+            echo "::error::No source archive was found in the artifact"
             exit 1
           fi
 
