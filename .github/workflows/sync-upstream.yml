@@ -1,0 +1,88 @@
+name: Sync with upstream
+
+# Keeps this fork in sync with the canonical LibreWolf repository on Codeberg.
+# Upstream commits land here as a pull request, so nothing is applied blindly.
+
+on:
+  schedule:
+    # Every day at 04:17 UTC
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Upstream branch to sync from'
+        required: false
+        default: 'main'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the fork
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://codeberg.org/librewolf/source.git
+          git fetch upstream "${{ inputs.branch || 'main' }}" --tags
+
+      - name: Check whether upstream is ahead
+        id: check
+        run: |
+          upstream_ref="upstream/${{ inputs.branch || 'main' }}"
+          base="origin/main"
+          git fetch origin main
+
+          if git rev-parse "$base" >/dev/null 2>&1; then
+            ahead=$(git rev-list --count "$base..$upstream_ref")
+            behind=$(git rev-list --count "$upstream_ref..$base")
+          else
+            ahead=$(git rev-list --count "$upstream_ref")
+            behind=0
+          fi
+
+          echo "ahead=$ahead" >> "$GITHUB_OUTPUT"
+          echo "behind=$behind" >> "$GITHUB_OUTPUT"
+
+          if [ "$ahead" -eq 0 ]; then
+            echo "Already up to date with upstream."
+          else
+            echo "Upstream has $ahead new commit(s); local has $behind divergent commit(s)."
+          fi
+
+      - name: Create sync branch
+        if: steps.check.outputs.ahead != '0'
+        env:
+          UPSTREAM_REF: upstream/${{ inputs.branch || 'main' }}
+        run: |
+          branch="sync/upstream-${{ inputs.branch || 'main' }}"
+          git checkout -B "$branch" "$UPSTREAM_REF"
+          git push --force origin "$branch"
+
+      - name: Open pull request
+        if: steps.check.outputs.ahead != '0'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: "sync/upstream-${{ inputs.branch || 'main' }}"
+          base: main
+          title: "Sync with upstream LibreWolf (${{ inputs.branch || 'main' }})"
+          commit-message: "Sync with upstream LibreWolf (${{ inputs.branch || 'main' }})"
+          body: |
+            Automated sync with the canonical LibreWolf repository.
+
+            * Upstream: <https://codeberg.org/librewolf/source>
+            * Branch: `${{ inputs.branch || 'main' }}`
+            * Commits ahead: `${{ steps.check.outputs.ahead }}`
+            * Local divergent commits: `${{ steps.check.outputs.behind }}`
+
+            Review this pull request before merging.
+          labels: sync
+          delete-branch: true
