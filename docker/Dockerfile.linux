@@ -36,9 +36,9 @@ RUN set -eux; \
     if [ -z "${SOURCE_URL:-}" ]; then \
         SOURCE_URL="${FORGE_URL}/api/packages/${FORGE_REPO_OWNER}/generic/librewolf-source/${VERSION}/librewolf-${VERSION}.source.tar.gz"; \
     fi; \
-    curl -qfA "" --no-sessionid --proto =https --tlsv1.2 \
+    curl -qfLA "" --no-sessionid --proto =https --tlsv1.2 \
         "$SOURCE_URL" -o "librewolf-${VERSION}.source.tar.gz"; \
-    if curl -qfA "" --no-sessionid --proto =https --tlsv1.2 \
+    if curl -qfLA "" --no-sessionid --proto =https --tlsv1.2 \
         "${SOURCE_URL}.sig" -o "librewolf-${VERSION}.source.tar.gz.sig"; then \
         if [ -n "${PUBKEY:-}" ]; then \
             printf '%s' "$PUBKEY" | gpg --import; \
