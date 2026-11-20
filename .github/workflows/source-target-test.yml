@@ -134,6 +134,7 @@ jobs:
           persist-credentials: false
 
       - name: Test Build
+        working-directory: ${{ github.workspace }}
         run: |
           make build TARGET=x86_64-pc-linux-gnu
           make package
@@ -163,6 +164,7 @@ jobs:
           persist-credentials: false
 
       - name: Test Build
+        working-directory: ${{ github.workspace }}
         run: |
           make build TARGET=x86_64-pc-windows-msvc
           make package
@@ -192,6 +194,7 @@ jobs:
           persist-credentials: false
 
       - name: Test Build
+        working-directory: ${{ github.workspace }}
         run: |
           make build TARGET=aarch64-apple-darwin
           make package
