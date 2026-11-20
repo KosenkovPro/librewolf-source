@@ -101,6 +101,7 @@ jobs:
       - name: Create the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
           TAG: ${{ needs.build-source.outputs.tag }}
         run: |
           set -euo pipefail
@@ -126,10 +127,12 @@ jobs:
 
           echo "-> Publishing ${#files[@]} files to the release $TAG"
 
-          if gh release view "$TAG" >/dev/null 2>&1; then
+          # The job does not check the repository out, so the repository has to
+          # be named for the github cli.
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
             echo "-> The release $TAG already exists, updating it"
-            gh release edit "$TAG" --title "LibreWolf Source v$TAG" --notes-file notes.md
-            gh release upload "$TAG" --clobber "${files[@]}"
+            gh release edit "$TAG" --repo "$REPO" --title "LibreWolf Source v$TAG" --notes-file notes.md
+            gh release upload "$TAG" --repo "$REPO" --clobber "${files[@]}"
           else
-            gh release create "$TAG" --title "LibreWolf Source v$TAG" --notes-file notes.md "${files[@]}"
+            gh release create "$TAG" --repo "$REPO" --title "LibreWolf Source v$TAG" --notes-file notes.md "${files[@]}"
           fi
