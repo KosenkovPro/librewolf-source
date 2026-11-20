@@ -37,7 +37,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [linux, windows, macos, dind, release]
+        # A single target can be built with the input, otherwise all of them.
+        target: ${{ fromJSON(inputs.target != '' && format('["{0}"]', inputs.target) || '["linux","windows","macos","dind","release"]') }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
