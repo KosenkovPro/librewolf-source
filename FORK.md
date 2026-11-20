@@ -104,10 +104,10 @@ skipped when no public key is given.
 
 ### What is not ported
 
-* A full Firefox build needs about 100 GB of disk and a lot of CPU time. The standard
-  GitHub runners have about 14 GB, so the build jobs need a bigger runner — set
-  `BUILD_RUNNER_JSON` to a self-hosted or a larger runner. The source release fits on a
-  standard runner.
+* A full Firefox build needs a lot of CPU time. The standard GitHub runners have
+  four cores and 16 GB of RAM, the build fits on their disk (145 GB) but takes many
+  hours and can run into the timeout of the job. Set `BUILD_RUNNER_JSON` to a
+  self-hosted or a larger runner to make it faster.
 * The auto-update distribution needs the upstream S3 bucket and CDN, the update manifests
   are published as release assets instead.
 

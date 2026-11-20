@@ -41,8 +41,8 @@ jobs:
 
       - name: Free the disk space
         run: |
-          # The standard runners have about 14 GB, the Firefox source tree
-          # needs a lot more than that. These directories are not used here.
+          # The Firefox source tree needs a lot of disk. These directories are
+          # not used here.
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
                      /usr/local/share/boost /usr/share/swift
           df -h /

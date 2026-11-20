@@ -67,9 +67,10 @@ The **CI is ported from Forgejo to GitHub Actions**:
   them to `ghcr.io/kosenkovpro/buildenv:*`, and the source archive and the packages are
   published as GitHub releases.
 
-A full Firefox build needs about 100 GB of disk, so the build jobs expect a bigger runner
-— set the repository variable `BUILD_RUNNER_JSON` to a self-hosted or a larger runner. The
-details are in [`FORK.md`](./FORK.md).
+A full Firefox build needs a lot of CPU time: the standard runners have four cores, so
+the build fits on their disk but takes many hours. Set the repository variable
+`BUILD_RUNNER_JSON` to a self-hosted or a larger runner to make it faster. The details
+are in [`FORK.md`](./FORK.md).
 
 Development continues here: new patches, settings and theming land in this repository, and
 the upstream changes arrive through the same sync workflow.
