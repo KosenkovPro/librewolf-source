@@ -4,6 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # The tools of the release are stored here. The runner overrides HOME in the
 # container, so the path has to be given explicitly.
 ENV MOZBUILD=/root/.mozbuild
+ENV MOZBUILD_STATE_PATH=/root/.mozbuild
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
