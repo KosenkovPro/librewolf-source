@@ -134,7 +134,7 @@ jobs:
           persist-credentials: false
 
       - name: Test Build
-        working-directory: ${{ github.workspace }}
+        working-directory: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
         run: |
           make build TARGET=x86_64-pc-linux-gnu
           make package
@@ -164,7 +164,7 @@ jobs:
           persist-credentials: false
 
       - name: Test Build
-        working-directory: ${{ github.workspace }}
+        working-directory: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
         run: |
           make build TARGET=x86_64-pc-windows-msvc
           make package
@@ -194,7 +194,7 @@ jobs:
           persist-credentials: false
 
       - name: Test Build
-        working-directory: ${{ github.workspace }}
+        working-directory: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
         run: |
           make build TARGET=aarch64-apple-darwin
           make package
