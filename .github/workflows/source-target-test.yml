@@ -127,11 +127,20 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      # The repository belongs to the user of the runner, the container works as
+      # root, git refuses to touch it without this.
+      GIT_CONFIG_COUNT: '1'
+      GIT_CONFIG_KEY_0: safe.directory
+      GIT_CONFIG_VALUE_0: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+
+      - name: Trust the repository
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Test Build
         working-directory: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
@@ -157,11 +166,18 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      GIT_CONFIG_COUNT: '1'
+      GIT_CONFIG_KEY_0: safe.directory
+      GIT_CONFIG_VALUE_0: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+
+      - name: Trust the repository
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Test Build
         working-directory: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
@@ -187,11 +203,18 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      GIT_CONFIG_COUNT: '1'
+      GIT_CONFIG_KEY_0: safe.directory
+      GIT_CONFIG_VALUE_0: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+
+      - name: Trust the repository
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Test Build
         working-directory: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
