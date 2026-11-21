@@ -65,9 +65,11 @@ jobs:
           if [ -z "$release" ]; then
             release="$(make release)"
           fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "release=$release" >> "$GITHUB_OUTPUT"
-          echo "tag=$version-$release" >> "$GITHUB_OUTPUT"
+          {
+            echo "version=$version"
+            echo "release=$release"
+            echo "tag=$version-$release"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Make the LibreWolf source archive
         env:

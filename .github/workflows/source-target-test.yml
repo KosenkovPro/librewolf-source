@@ -150,9 +150,11 @@ jobs:
         run: |
           # Rust was installed in the home directory of the image, the runner
           # overrides HOME in the container.
-          echo "PATH=/root/.cargo/bin:$PATH" >> "$GITHUB_ENV"
-          echo "CARGO_HOME=/root/.cargo" >> "$GITHUB_ENV"
-          echo "RUSTUP_HOME=/root/.rustup" >> "$GITHUB_ENV"
+          {
+            echo "PATH=/root/.cargo/bin:$PATH"
+            echo "CARGO_HOME=/root/.cargo"
+            echo "RUSTUP_HOME=/root/.rustup"
+          } >> "$GITHUB_ENV"
 
       - name: Test Build
         working-directory: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
@@ -199,9 +201,11 @@ jobs:
         run: |
           # Rust was installed in the home directory of the image, the runner
           # overrides HOME in the container.
-          echo "PATH=/root/.cargo/bin:$PATH" >> "$GITHUB_ENV"
-          echo "CARGO_HOME=/root/.cargo" >> "$GITHUB_ENV"
-          echo "RUSTUP_HOME=/root/.rustup" >> "$GITHUB_ENV"
+          {
+            echo "PATH=/root/.cargo/bin:$PATH"
+            echo "CARGO_HOME=/root/.cargo"
+            echo "RUSTUP_HOME=/root/.rustup"
+          } >> "$GITHUB_ENV"
 
       - name: Test Build
         working-directory: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
@@ -248,9 +252,11 @@ jobs:
         run: |
           # Rust was installed in the home directory of the image, the runner
           # overrides HOME in the container.
-          echo "PATH=/root/.cargo/bin:$PATH" >> "$GITHUB_ENV"
-          echo "CARGO_HOME=/root/.cargo" >> "$GITHUB_ENV"
-          echo "RUSTUP_HOME=/root/.rustup" >> "$GITHUB_ENV"
+          {
+            echo "PATH=/root/.cargo/bin:$PATH"
+            echo "CARGO_HOME=/root/.cargo"
+            echo "RUSTUP_HOME=/root/.rustup"
+          } >> "$GITHUB_ENV"
 
       - name: Test Build
         working-directory: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
