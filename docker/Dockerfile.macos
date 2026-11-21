@@ -1,6 +1,9 @@
 FROM debian:trixie-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
+# The toolchain of the build system is stored here. The runner overrides HOME
+# in the container, so the path has to be given explicitly.
+ENV MOZBUILD=/root/.mozbuild
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
