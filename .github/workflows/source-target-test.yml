@@ -130,6 +130,9 @@ jobs:
     env:
       # The repository belongs to the user of the runner, the container works as
       # root, git refuses to touch it without this.
+      # The toolchain of the build system lives in /root/.mozbuild, the runner
+      # overrides HOME in the container, without this mach does not find it.
+      MOZBUILD: /root/.mozbuild
       GIT_CONFIG_COUNT: '1'
       GIT_CONFIG_KEY_0: safe.directory
       GIT_CONFIG_VALUE_0: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
@@ -167,6 +170,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     env:
+      MOZBUILD: /root/.mozbuild
       GIT_CONFIG_COUNT: '1'
       GIT_CONFIG_KEY_0: safe.directory
       GIT_CONFIG_VALUE_0: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
@@ -204,6 +208,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     env:
+      MOZBUILD: /root/.mozbuild
       GIT_CONFIG_COUNT: '1'
       GIT_CONFIG_KEY_0: safe.directory
       GIT_CONFIG_VALUE_0: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
