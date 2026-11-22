@@ -48,9 +48,12 @@ async function scrollTo(tabId, x, y) {
 
 /**
  * Captures the whole page and puts the pieces together.
+ *
+ * The page is scrolled down piece by piece, every piece is a picture of the
+ * screen, they are put one under another.
  */
-async function captureFullPage(windowId) {
-  const metrics = await pageMetrics(windowId.tabId);
+async function captureFullPage(target) {
+  const metrics = await pageMetrics(target.tabId);
   if (!metrics) {
     return null;
   }
@@ -58,49 +61,67 @@ async function captureFullPage(windowId) {
   const startX = metrics.scrollX;
   const startY = metrics.scrollY;
   const step = Math.max(200, Math.floor(metrics.viewportHeight * 0.9));
-  const parts = [];
+  const pieces = [];
 
   try {
     for (let y = 0; y < metrics.height; y += step) {
-      await scrollTo(windowId.tabId, startX, startY + y);
-      const dataUrl = await captureVisible(windowId.windowId);
-      parts.push(dataUrl);
+      await scrollTo(target.tabId, startX, startY + y);
+      const dataUrl = await captureVisible(target.windowId);
+      pieces.push({ dataUrl, y });
       if (startY + y + metrics.viewportHeight >= metrics.height) {
         break;
       }
     }
   } finally {
-    await scrollTo(windowId.tabId, startX, startY);
+    await scrollTo(target.tabId, startX, startY);
   }
 
   const images = await Promise.all(
-    parts.map(
-      (dataUrl) =>
-        new Promise((resolve) => {
-          const image = new Image();
-          image.onload = () => resolve(image);
-          image.onerror = () => resolve(null);
-          image.src = dataUrl;
-        }),
-    ),
+    pieces.map(async (piece) => ({
+      y: piece.y,
+      image: await new Promise((resolve) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => resolve(null);
+        image.src = piece.dataUrl;
+      }),
+    })),
   );
 
-  const valid = images.filter(Boolean);
+  const valid = images.filter((piece) => piece.image);
   if (!valid.length) {
     return null;
   }
 
+  // The picture of the browser is in the pixels of the screen, the size of
+  // the page is in the pixels of the page.
+  const scale = valid[0].image.width / metrics.viewportWidth || 1;
+  let width = Math.round(metrics.viewportWidth * scale);
+  let height = Math.round(metrics.height * scale);
+
+  // The browser does not take a picture that is bigger than this.
+  const limit = 40 * 1000 * 1000;
+  if (width * height > limit) {
+    const factor = Math.sqrt(limit / (width * height));
+    width = Math.max(1, Math.round(width * factor));
+    height = Math.max(1, Math.round(height * factor));
+  }
+
   const canvas = document.createElement("canvas");
-  canvas.width = metrics.width;
-  canvas.height = metrics.height;
+  canvas.width = width;
+  canvas.height = height;
   const context = canvas.getContext("2d");
   context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillRect(0, 0, width, height);
 
-  let offset = 0;
-  for (const image of valid) {
-    context.drawImage(image, 0, offset, metrics.width, image.height);
-    offset += image.height;
+  for (const piece of valid) {
+    context.drawImage(
+      piece.image,
+      0,
+      Math.round(piece.y * scale),
+      piece.image.width,
+      piece.image.height,
+    );
   }
 
   return canvas.toDataURL("image/jpeg", 0.92);
