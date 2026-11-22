@@ -61,6 +61,21 @@ permission of the site.
 | `librewolf-darkmode@librewolf.net` | The dark mode of every site, with the settings of the brightness and of the contrast and with the list of the exceptions. | `Alt+D` |
 | `librewolf-profile@librewolf.net` | The setup of the profile: the bookmark of Hoppscotch, the bar of the page of Hoppscotch and the state of the extension of Hoppscotch, it is turned off until the user turns it on with two clicks. | — |
 
+### The service of the translation of the videos
+
+The translation of the videos of YouTube is done by the service of Yandex, the extension speaks
+its protocol the same way the open source client of it does
+([FOSWLY/vot.js](https://github.com/FOSWLY/vot.js), the MIT licence): a session is opened, the
+requests are signed with the public key of the service and the body of them is written in the
+format of the protocol buffers.
+
+The service refuses some requests. It answers with the code `402` and with the number of the
+refusal in the body of the answer, the panel of the translation shows this answer. The refusal
+happens when the address of the machine is not allowed by the service: the addresses of the
+datacenters and of the virtual private networks are refused for every video. The request of a
+session is answered in such a case, only the request of the translation is refused. The extension
+cannot do anything about it, the address of the machine has to be allowed by the service.
+
 ### The server of the agents
 
 The console of the agents talks to a local server, the source of it is in

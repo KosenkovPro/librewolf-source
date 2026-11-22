@@ -67,6 +67,28 @@ function randomUuid() {
     .toUpperCase();
 }
 
+/**
+ * The answer of the service when it refuses a request.
+ *
+ * The service explains the refusal in the body of the answer, the user needs
+ * to see it: the refusal can mean that the address of the machine is not
+ * allowed or that the account of the service is needed.
+ */
+function refusal(response, path) {
+  return response.text().then(
+    (raw) => {
+      const clean = String(raw || "")
+        .replace(/[^\x20-\x7e]+/g, " ")
+        .trim()
+        .slice(0, 160);
+      return `The service answered ${response.status} to ${path}${
+        clean ? ` — ${clean}` : ""
+      }`;
+    },
+    () => `The service answered ${response.status} to ${path}`,
+  );
+}
+
 /** Opens a session of the service and remembers its key. */
 async function openSession() {
   const uuid = randomUuid();
@@ -84,7 +106,7 @@ async function openSession() {
   });
 
   if (!response.ok) {
-    throw new Error(`The service answered ${response.status} to the request of a session`);
+    throw new Error(await refusal(response, PATHS.session));
   }
 
   const answer = LibreWolfVotProtobuf.decodeSessionResponse(
@@ -134,7 +156,7 @@ async function request(path, body, method = "POST") {
 
   const response = await fetch(`${API_BASE}${path}`, { method, headers, body });
   if (!response.ok) {
-    throw new Error(`The service answered ${response.status} to ${path}`);
+    throw new Error(await refusal(response, path));
   }
   return new Uint8Array(await response.arrayBuffer());
 }
