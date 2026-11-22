@@ -44,6 +44,65 @@ git push origin main
 To track upstream automatically, GitHub Actions can open a pull request on a schedule —
 see [`.github/workflows/sync-upstream.yml`](.github/workflows/sync-upstream.yml).
 
+## The tools of the fork
+
+The fork puts five tools into the browser itself and one more extension that prepares the
+profile. They are built-in WebExtensions, they live in [`extensions/`](./extensions) and the
+scripts of the build put them into the tree of Firefox, the same way as the extensions of
+Mozilla do. They are always there, they cannot be uninstalled and they do not ask for any
+permission of the site.
+
+| The extension | What it does | The shortcut |
+| --- | --- | --- |
+| `librewolf-vot@librewolf.net` | Translates the videos of YouTube with the service of Yandex, the sound of the translation is played together with the video. The panel is on the page of the video. | `Alt+T` |
+| `librewolf-colorpicker@librewolf.net` | Picks the color of a pixel of the page, it shows the color and copies it as `HEX`, `RGB` or `HSL`. The lens of the browser is shown while the color is picked. | `Alt+C` |
+| `librewolf-screenshot@librewolf.net` | Cuts a part of the page out, it draws on it with the arrows, the frames, the markers, the blur and the text, and it saves it as a picture, as a pdf or as a single html file. The whole page is taken with a scroll. | `Alt+S` |
+| `librewolf-mcp@librewolf.net` | The console of the agents. It is in the side panel of the browser, it shows the state of the connection with the local server of MCP, the log of the calls, and it takes the task of the agent by voice. | `Alt+M` |
+| `librewolf-darkmode@librewolf.net` | The dark mode of every site, with the settings of the brightness and of the contrast and with the list of the exceptions. | `Alt+D` |
+| `librewolf-profile@librewolf.net` | The setup of the profile: the bookmark of Hoppscotch and the state of the extension of Hoppscotch, it is turned off until the user turns it on. | — |
+
+### The server of the agents
+
+The console of the agents talks to a local server, the source of it is in
+[`mcp-server/`](./mcp-server). The server speaks the Model Context Protocol on the standard
+input and the standard output, so any agent of the command line can start it, and it listens
+on `127.0.0.1:8977` for the browser.
+
+```json
+{
+  "mcpServers": {
+    "librewolf": {
+      "command": "node",
+      "args": ["/path/to/librewolf-source/mcp-server/server.js"]
+    }
+  }
+}
+```
+
+The voice of the console is sent to a service of the speech to text, the address of it is
+set in the console. The server of [whisper.cpp](https://github.com/ggerganov/whisper.cpp)
+fits.
+
+### The extensions of AMO
+
+The policy of the browser in [`settings/distribution/policies.json`](./settings/distribution/policies.json)
+installs the extensions of AMO: KeePassXC-Browser, Wappalyzer, Requestly, JSON Formatter,
+Cookie-Editor and Sourcegraph are turned on, the extension of Hoppscotch is installed and
+is turned off, the user turns it on with two clicks in the menu of the extensions.
+
+### The settings of the user
+
+The file [`librewolf.overrides.cfg`](./librewolf.overrides.cfg) is the file of the settings
+that the user can change. It is read by the browser at every start. Put it in the profile of
+the browser:
+
+* Windows: `%USERPROFILE%\.librewolf\librewolf.overrides.cfg`
+* Linux: `$XDG_CONFIG_HOME/librewolf/librewolf/librewolf.overrides.cfg`
+
+It holds the video of the pages (WebGL, AV1 and VP9), the cookies, the sessions and the
+local collections that are kept when the browser is closed, and the requests to the local
+machine.
+
 ## Building
 
 The build instructions in [`README.md`](./README.md) still apply. Upstream builds with

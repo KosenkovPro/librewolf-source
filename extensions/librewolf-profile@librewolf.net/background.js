@@ -22,16 +22,40 @@ async function addBookmark() {
       (child) => child.url === HOPPSCOTCH_URL || child.title === "Hoppscotch",
     );
     if (exists) {
-      return;
+      return true;
     }
     await browser.bookmarks.create({
       parentId: toolbar.id,
       title: "Hoppscotch",
       url: HOPPSCOTCH_URL,
     });
+    return true;
   } catch (error) {
     console.debug("The bookmark of Hoppscotch could not be added", error);
+    return false;
   }
+}
+
+/**
+ * Waits for the bookmark of Hoppscotch and puts it on the panel.
+ *
+ * The service of the bookmarks is not ready at the first start of the
+ * browser, the wait is here because of that.
+ */
+function waitAndBookmark() {
+  const started = Date.now();
+
+  const tick = async () => {
+    const done = await addBookmark();
+    if (done) {
+      return;
+    }
+    if (Date.now() - started < WAIT_FOR_ADDON_MS) {
+      setTimeout(tick, CHECK_EVERY_MS);
+    }
+  };
+
+  tick();
 }
 
 /**
@@ -75,16 +99,16 @@ function waitAndDisable() {
 }
 
 browser.runtime.onStartup.addListener(() => {
-  addBookmark();
+  waitAndBookmark();
   waitAndDisable();
 });
 
 browser.runtime.onInstalled.addListener(() => {
-  addBookmark();
+  waitAndBookmark();
   waitAndDisable();
 });
 
 // The background page of the extension starts with the browser, the work
 // begins right away.
-addBookmark();
+waitAndBookmark();
 waitAndDisable();
