@@ -55,6 +55,9 @@
         "EncryptedMediaExtensions": {
             "Enabled": false
         },
+        "Extensions": {
+            "Locked": ["librewolf-profile@librewolf.net"]
+        },
         "ExtensionSettings": {
             "*": {
                 "blocked_install_message": "LibreWolf does not allow installing Language Packs.",

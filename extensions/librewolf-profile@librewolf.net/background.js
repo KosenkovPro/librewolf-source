@@ -9,17 +9,49 @@
 const HOPPSCOTCH_ID = "postwoman-firefox@postwoman.io";
 const HOPPSCOTCH_URL = "https://hoppscotch.io";
 
+// The folder of the bookmarks of the panel, the address of it is the same in
+// every version of the browser.
+const TOOLBAR_GUID = "toolbar_____";
+
 // How long the extension waits for the extension of Hoppscotch, the policy of
 // the browser installs it from the network and it can take a while.
 const WAIT_FOR_ADDON_MS = 120000;
 const CHECK_EVERY_MS = 3000;
 
+/**
+ * The folder of the bookmarks of the panel.
+ *
+ * The folder has an address of its own, it is the same in every version of
+ * the browser, but the tree of the bookmarks is looked through as well, so
+ * that the folder is found even when the address is not the one.
+ */
+async function toolbarFolder() {
+  const byGuid = await browser.bookmarks.getSubTree(TOOLBAR_GUID);
+  if (byGuid?.id) {
+    return byGuid;
+  }
+
+  const tree = await browser.bookmarks.getTree();
+  const root = tree[0];
+  const found = (root?.children || []).find(
+    (node) => node.guid === TOOLBAR_GUID || node.title === "Bookmarks Toolbar",
+  );
+  if (!found) {
+    throw new Error("The folder of the bookmarks is not there");
+  }
+  return found;
+}
+
 /** The bookmark of Hoppscotch is put on the panel of the bookmarks. */
 async function addBookmark() {
   try {
-    const toolbar = await browser.bookmarks.getSubTree("toolbar____");
-    const exists = toolbar.children.some(
-      (child) => child.url === HOPPSCOTCH_URL || child.title === "Hoppscotch",
+    const toolbar = await toolbarFolder();
+    const children = toolbar.children || [];
+    const exists = children.some(
+      (child) =>
+        child.url === HOPPSCOTCH_URL ||
+        child.url === `${HOPPSCOTCH_URL}/` ||
+        child.title === "Hoppscotch",
     );
     if (exists) {
       return true;
@@ -98,17 +130,21 @@ function waitAndDisable() {
   tick();
 }
 
-browser.runtime.onStartup.addListener(() => {
-  waitAndBookmark();
-  waitAndDisable();
-});
+/** The work begins only once, the events of the browser can come at the same time. */
+let started = false;
 
-browser.runtime.onInstalled.addListener(() => {
+function start() {
+  if (started) {
+    return;
+  }
+  started = true;
   waitAndBookmark();
   waitAndDisable();
-});
+}
+
+browser.runtime.onStartup.addListener(start);
+browser.runtime.onInstalled.addListener(start);
 
 // The background page of the extension starts with the browser, the work
 // begins right away.
-waitAndBookmark();
-waitAndDisable();
+start();

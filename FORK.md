@@ -90,6 +90,11 @@ installs the extensions of AMO: KeePassXC-Browser, Wappalyzer, Requestly, JSON F
 Cookie-Editor and Sourcegraph are turned on, the extension of Hoppscotch is installed and
 is turned off, the user turns it on with two clicks in the menu of the extensions.
 
+The extension of Hoppscotch is turned off by the built-in extension `librewolf-profile`, and
+the api of the browser lets it do that only when the caller is required by the policy of the
+browser. The list `Extensions.Locked` of the policy holds the id of the built-in extension for
+that reason.
+
 ### The api of the browser that does not exist
 
 Firefox 160 has no `EyeDropper` api, the one of the standard of the web is not a part of it,
