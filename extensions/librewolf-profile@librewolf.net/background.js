@@ -2,12 +2,15 @@
 //
 // The extension of Hoppscotch is installed by the policy of the browser, but
 // it is turned off at the start, so that it does not eat the memory of the
-// machine. The user turns it on with two clicks, in the menu of the
-// extensions. The bookmark of Hoppscotch is put on the panel of the bookmarks
-// as well.
+// machine. The user turns it on with two clicks: the button of the extension
+// in the panel of the browser and the button in the panel of the extension.
+// The bookmark of Hoppscotch is put on the panel of the bookmarks as well.
 
 const HOPPSCOTCH_ID = "postwoman-firefox@postwoman.io";
 const HOPPSCOTCH_URL = "https://hoppscotch.io";
+
+// The key of the choice of the user in the storage of the extension.
+const CHOICE_KEY = "hoppscotch";
 
 // The folder of the bookmarks of the panel, the address of it is the same in
 // every version of the browser.
@@ -113,11 +116,69 @@ async function disableHoppscotch() {
   }
 }
 
+/**
+ * The choice of the user: "on" or "off".
+ *
+ * The extension of Hoppscotch is off until the user turns it on. The choice is
+ * remembered, so that the browser does not turn the extension off again at the
+ * next start.
+ */
+async function userChoice() {
+  try {
+    const data = await browser.storage.local.get(CHOICE_KEY);
+    return data?.[CHOICE_KEY] === "on" ? "on" : "off";
+  } catch (error) {
+    console.debug("The choice of the user could not be read", error);
+    return "off";
+  }
+}
+
+/** The state of the extension of Hoppscotch. */
+async function hoppscotchState() {
+  try {
+    const addon = await browser.management.get(HOPPSCOTCH_ID);
+    return {
+      installed: !!addon,
+      enabled: !!(addon && addon.enabled),
+    };
+  } catch (error) {
+    console.debug("The state of Hoppscotch could not be read", error);
+    return { installed: false, enabled: false };
+  }
+}
+
+/**
+ * Turns the extension of Hoppscotch on or off, as the user asks for it in the
+ * panel of the extension.
+ */
+async function toggleHoppscotch() {
+  const state = await hoppscotchState();
+  if (!state.installed) {
+    return state;
+  }
+  try {
+    await browser.management.setEnabled(HOPPSCOTCH_ID, !state.enabled);
+    await browser.storage.local.set({
+      [CHOICE_KEY]: state.enabled ? "off" : "on",
+    });
+    console.info(
+      `The extension of Hoppscotch is turned ${state.enabled ? "off" : "on"}.`,
+    );
+  } catch (error) {
+    console.debug("The extension of Hoppscotch could not be turned", error);
+  }
+  return hoppscotchState();
+}
+
 /** Waits for the extension of Hoppscotch and turns it off. */
 function waitAndDisable() {
   const started = Date.now();
 
   const tick = async () => {
+    // The user has turned the extension on, the choice is kept.
+    if ((await userChoice()) === "on") {
+      return;
+    }
     const done = await disableHoppscotch();
     if (done) {
       return;
@@ -129,6 +190,20 @@ function waitAndDisable() {
 
   tick();
 }
+
+/**
+ * The panel of the extension asks for the state of the extension of
+ * Hoppscotch and turns it on or off.
+ */
+browser.runtime.onMessage.addListener((message) => {
+  if (message?.type === "state") {
+    return hoppscotchState();
+  }
+  if (message?.type === "toggle") {
+    return toggleHoppscotch();
+  }
+  return undefined;
+});
 
 /** The work begins only once, the events of the browser can come at the same time. */
 let started = false;

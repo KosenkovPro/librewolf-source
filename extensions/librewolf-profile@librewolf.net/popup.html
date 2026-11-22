@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>LibreWolf Profile Setup</title>
+    <style>
+      body {
+        font: 13px system-ui, sans-serif;
+        margin: 0;
+        padding: 12px;
+        width: 280px;
+        color: #fbfbfe;
+        background: #1c1b22;
+      }
+      h1 {
+        font-size: 14px;
+        margin: 0 0 8px;
+      }
+      .state {
+        color: #b1b1bd;
+        margin-bottom: 10px;
+      }
+      .state b {
+        color: #fbfbfe;
+      }
+      button {
+        width: 100%;
+        padding: 7px 8px;
+        border-radius: 5px;
+        border: 1px solid #4a4a52;
+        background: #2b2a33;
+        color: #fbfbfe;
+        cursor: pointer;
+      }
+      button:hover:not(:disabled) {
+        background: #3a3944;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+      .note {
+        margin-top: 10px;
+        color: #8f8f9d;
+        font-size: 12px;
+      }
+      .error {
+        color: #ff9aa2;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Profile setup</h1>
+    <div class="state" id="state">…</div>
+    <button id="toggle">Turn on Hoppscotch</button>
+    <div class="note" id="note">
+      The bookmark of Hoppscotch is on the panel of the bookmarks.
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
