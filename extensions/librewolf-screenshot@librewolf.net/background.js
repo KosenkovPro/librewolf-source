@@ -64,11 +64,13 @@ async function captureFullPage(target) {
   const pieces = [];
 
   try {
+    // The page is scrolled from the top of it, the piece of the picture is
+    // put at the place of the page it was taken at.
     for (let y = 0; y < metrics.height; y += step) {
-      await scrollTo(target.tabId, startX, startY + y);
+      await scrollTo(target.tabId, startX, y);
       const dataUrl = await captureVisible(target.windowId);
       pieces.push({ dataUrl, y });
-      if (startY + y + metrics.viewportHeight >= metrics.height) {
+      if (y + metrics.viewportHeight >= metrics.height) {
         break;
       }
     }

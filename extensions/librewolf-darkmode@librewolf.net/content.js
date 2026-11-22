@@ -66,3 +66,27 @@ browser.runtime.onMessage.addListener((message) => {
   apply(message.enabled, message.brightness, message.contrast);
   return Promise.resolve({ ok: true });
 });
+
+/**
+ * The state of the dark mode is asked from the background page.
+ *
+ * The background page tells the page about the change of the mode when the tab
+ * is loaded, but the message can arrive before the script of the page is
+ * ready, it is lost then. The script of the page asks for the state itself,
+ * and it asks again when the background page is not ready yet.
+ */
+async function askForState(attempt = 0) {
+  try {
+    const state = await browser.runtime.sendMessage({
+      type: "librewolf-darkmode-get-state",
+    });
+    const settings = state?.settings || {};
+    apply(state?.enabled, settings.brightness, settings.contrast);
+  } catch (error) {
+    if (attempt < 5) {
+      setTimeout(() => askForState(attempt + 1), 500);
+    }
+  }
+}
+
+askForState();
