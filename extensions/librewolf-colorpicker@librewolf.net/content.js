@@ -1,23 +1,72 @@
-// The page side of the color picker. The pick itself is done by the
-// EyeDropper api of the browser, the result is shown in an overlay that offers
-// the three formats of the color.
+// The page side of the color picker.
+//
+// The background page of the extension sends the picture of the visible part of
+// the tab, this script shows it, the mouse picks the pixel of it and the color
+// of the pixel is shown in the three formats and is copied into the buffer.
 
 const OVERLAY_ID = "librewolf-colorpicker-overlay";
-const HUD_ID = "librewolf-colorpicker-hud";
 const FORMAT_KEY = "librewolf-colorpicker-format";
+
+/** How much the loupe magnifies the pixels of the picture. */
+const ZOOM = 8;
+/** The size of the loupe in the pixels of the screen. */
+const LOUPE_SIZE = 104;
 
 const STYLES = `
   #${OVERLAY_ID} {
+    all: initial;
     position: fixed;
     inset: 0;
     z-index: 2147483647;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.45);
+    cursor: crosshair;
     font-family: system-ui, sans-serif;
+    font-size: 13px;
+    color: #fbfbfe;
+  }
+  #${OVERLAY_ID} canvas.lw-cp-shot {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  #${OVERLAY_ID} .lw-cp-hint {
+    position: absolute;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%);
+    background: #1c1b22;
+    border: 1px solid #4a4a52;
+    border-radius: 20px;
+    padding: 9px 18px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+    white-space: nowrap;
+  }
+  #${OVERLAY_ID} canvas.lw-cp-loupe {
+    position: absolute;
+    width: ${LOUPE_SIZE}px;
+    height: ${LOUPE_SIZE}px;
+    border: 1px solid #4a4a52;
+    border-radius: 6px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
+    image-rendering: pixelated;
+    pointer-events: none;
+  }
+  #${OVERLAY_ID} .lw-cp-readout {
+    position: absolute;
+    padding: 4px 8px;
+    background: #1c1b22;
+    border: 1px solid #4a4a52;
+    border-radius: 5px;
+    font-family: ui-monospace, monospace;
+    white-space: nowrap;
+    pointer-events: none;
   }
   #${OVERLAY_ID} .lw-cp-box {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
     background: #1c1b22;
     color: #fbfbfe;
     border: 1px solid #4a4a52;
@@ -25,6 +74,7 @@ const STYLES = `
     padding: 16px;
     min-width: 280px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    cursor: default;
   }
   #${OVERLAY_ID} .lw-cp-swatch {
     width: 100%;
@@ -56,21 +106,10 @@ const STYLES = `
   }
   #${OVERLAY_ID} button:hover { background: #3a3944; }
   #${OVERLAY_ID} .lw-cp-done { background: #0060df; border-color: #0060df; }
-  #${HUD_ID} {
-    position: fixed;
-    left: 50%;
-    bottom: 28px;
-    transform: translateX(-50%);
-    z-index: 2147483647;
-    background: #1c1b22;
-    color: #fbfbfe;
-    border: 1px solid #4a4a52;
-    border-radius: 20px;
-    padding: 9px 18px;
-    font: 13px system-ui, sans-serif;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
-  }
 `;
+
+/** The elements of the picker that are alive right now. */
+let picker = null;
 
 function ensureStyles() {
   if (document.getElementById("librewolf-colorpicker-styles")) {
@@ -82,32 +121,20 @@ function ensureStyles() {
   (document.head || document.documentElement).appendChild(style);
 }
 
-function removeNode(id) {
-  document.getElementById(id)?.remove();
+function removeOverlay() {
+  if (picker?.onKey) {
+    document.removeEventListener("keydown", picker.onKey, true);
+  }
+  picker = null;
+  document.getElementById(OVERLAY_ID)?.remove();
 }
 
-function showHud(text) {
-  removeNode(HUD_ID);
-  const hud = document.createElement("div");
-  hud.id = HUD_ID;
-  hud.textContent = text;
-  document.documentElement.appendChild(hud);
-}
+/** Converts the color of a pixel into the three formats. */
+function formatsOf(r, g, b) {
+  const hex = `#${[r, g, b]
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("")}`;
 
-function hideHud() {
-  removeNode(HUD_ID);
-}
-
-function toRgb(srgbHex) {
-  return {
-    r: parseInt(srgbHex.slice(1, 3), 16),
-    g: parseInt(srgbHex.slice(3, 5), 16),
-    b: parseInt(srgbHex.slice(5, 7), 16),
-  };
-}
-
-function toHsl(srgbHex) {
-  const { r, g, b } = toRgb(srgbHex);
   const max = Math.max(r, g, b) / 255;
   const min = Math.min(r, g, b) / 255;
   const l = (max + min) / 2;
@@ -125,62 +152,63 @@ function toHsl(srgbHex) {
     }
     h /= 6;
   }
+
   return {
-    h: Math.round(h * 360),
-    s: Math.round(s * 100),
-    l: Math.round(l * 100),
+    hex: hex.toUpperCase(),
+    rgb: `rgb(${r}, ${g}, ${b})`,
+    hsl: `hsl(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`,
   };
 }
 
-function buildOverlay(srgbHex) {
-  removeNode(OVERLAY_ID);
-  const { r, g, b } = toRgb(srgbHex);
-  const hsl = toHsl(srgbHex);
+/** The color of the pixel of the picture under the pointer of the mouse. */
+function pixelUnder(event) {
+  const rect = picker.shot.getBoundingClientRect();
+  const x = Math.floor((event.clientX - rect.left) * (picker.shot.width / rect.width));
+  const y = Math.floor((event.clientY - rect.top) * (picker.shot.height / rect.height));
 
-  const overlay = document.createElement("div");
-  overlay.id = OVERLAY_ID;
-  overlay.innerHTML = `
-    <div class="lw-cp-box">
-      <div class="lw-cp-swatch" style="background:${srgbHex}"></div>
-      <div class="lw-cp-values">
-        <div><span>HEX</span><strong class="lw-cp-hex">${srgbHex.toUpperCase()}</strong></div>
-        <div><span>RGB</span><strong class="lw-cp-rgb">rgb(${r}, ${g}, ${b})</strong></div>
-        <div><span>HSL</span><strong class="lw-cp-hsl">hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)</strong></div>
-      </div>
-      <div class="lw-cp-actions">
-        <button data-format="hex">Copy HEX</button>
-        <button data-format="rgb">Copy RGB</button>
-        <button data-format="hsl">Copy HSL</button>
-      </div>
-      <div class="lw-cp-actions">
-        <button class="lw-cp-done">Close</button>
-      </div>
-    </div>
-  `;
+  if (x < 0 || y < 0 || x >= picker.shot.width || y >= picker.shot.height) {
+    return null;
+  }
 
-  const values = {
-    hex: srgbHex.toUpperCase(),
-    rgb: `rgb(${r}, ${g}, ${b})`,
-    hsl: `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`,
-  };
+  const data = picker.ctx.getImageData(x, y, 1, 1).data;
+  return { x, y, r: data[0], g: data[1], b: data[2] };
+}
 
-  overlay.querySelectorAll("button[data-format]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const format = button.dataset.format;
-      await browser.storage.local.set({ [FORMAT_KEY]: format });
-      await copyText(values[format]);
-      button.textContent = "Copied";
-      setTimeout(() => {
-        button.textContent = `Copy ${format.toUpperCase()}`;
-      }, 1200);
-    });
-  });
+/** Shows the pixels around the pointer of the mouse in the loupe. */
+function drawLoupe(pixel) {
+  const { loupe, loupeCtx } = picker;
+  const half = Math.max(1, Math.round(LOUPE_SIZE / 2 / ZOOM));
 
-  overlay.querySelector(".lw-cp-done").addEventListener("click", () => {
-    removeNode(OVERLAY_ID);
-  });
+  loupeCtx.clearRect(0, 0, LOUPE_SIZE, LOUPE_SIZE);
+  loupeCtx.imageSmoothingEnabled = false;
+  loupeCtx.drawImage(
+    picker.shot,
+    pixel.x - half,
+    pixel.y - half,
+    half * 2,
+    half * 2,
+    0,
+    0,
+    LOUPE_SIZE,
+    LOUPE_SIZE,
+  );
 
-  document.documentElement.appendChild(overlay);
+  // The square in the middle of the loupe is the pixel under the mouse.
+  loupeCtx.strokeStyle = "#ffffff";
+  loupeCtx.lineWidth = 1;
+  loupeCtx.strokeRect(
+    LOUPE_SIZE / 2 - ZOOM / 2 - 0.5,
+    LOUPE_SIZE / 2 - ZOOM / 2 - 0.5,
+    ZOOM + 1,
+    ZOOM + 1,
+  );
+  loupeCtx.strokeStyle = "#000000";
+  loupeCtx.strokeRect(
+    LOUPE_SIZE / 2 - ZOOM / 2 - 1.5,
+    LOUPE_SIZE / 2 - ZOOM / 2 - 1.5,
+    ZOOM + 3,
+    ZOOM + 3,
+  );
 }
 
 /**
@@ -193,54 +221,172 @@ async function copyText(text) {
   await browser.runtime.sendMessage({ type: "librewolf-colorpicker-copy", text });
 }
 
-async function startPick(format) {
-  if (typeof window.EyeDropper !== "function") {
-    showHud("The EyeDropper api is not available in this build.");
-    setTimeout(hideHud, 4000);
+/** Shows the color that was picked, with the three formats of it. */
+function showResult(pixel, format) {
+  const values = formatsOf(pixel.r, pixel.g, pixel.b);
+
+  const box = document.createElement("div");
+  box.className = "lw-cp-box";
+  box.innerHTML = `
+    <div class="lw-cp-swatch" style="background:${values.hex}"></div>
+    <div class="lw-cp-values">
+      <div><span>HEX</span><strong class="lw-cp-hex">${values.hex}</strong></div>
+      <div><span>RGB</span><strong class="lw-cp-rgb">${values.rgb}</strong></div>
+      <div><span>HSL</span><strong class="lw-cp-hsl">${values.hsl}</strong></div>
+    </div>
+    <div class="lw-cp-actions">
+      <button data-format="hex">Copy HEX</button>
+      <button data-format="rgb">Copy RGB</button>
+      <button data-format="hsl">Copy HSL</button>
+    </div>
+    <div class="lw-cp-actions">
+      <button class="lw-cp-done">Close</button>
+    </div>
+  `;
+
+  box.querySelectorAll("button[data-format]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      await copyText(values[button.dataset.format]);
+      button.textContent = "Copied";
+      setTimeout(() => {
+        button.textContent = `Copy ${button.dataset.format.toUpperCase()}`;
+      }, 1200);
+    });
+  });
+
+  box.querySelector(".lw-cp-done").addEventListener("click", () => {
+    removeOverlay();
+  });
+
+  picker.loupe.remove();
+  picker.readout.remove();
+  picker.hint.remove();
+  picker.overlay.appendChild(box);
+
+  // The color of the pixel is copied right away, in the format of the last
+  // time, the buttons of the panel copy it in the other formats.
+  browser.storage.local.set({ [FORMAT_KEY]: format }).catch(() => {});
+  copyText(values[format] || values.hex).catch(() => {});
+}
+
+/** Starts the pick with the picture of the visible part of the tab. */
+async function startPick(dataUrl, format) {
+  removeOverlay();
+  ensureStyles();
+
+  const image = new Image();
+  image.src = dataUrl;
+  try {
+    await image.decode();
+  } catch (error) {
+    console.error("The picture of the page could not be read", error);
     return;
   }
 
-  hideHud();
-  showHud("Click on a color to pick it, Esc to cancel.");
+  const shot = document.createElement("canvas");
+  shot.className = "lw-cp-shot";
+  shot.width = image.naturalWidth || image.width;
+  shot.height = image.naturalHeight || image.height;
 
-  const onClick = async (event) => {
-    // The page must not react to the click that starts the pick.
-    event.preventDefault();
-    event.stopPropagation();
-    document.removeEventListener("click", onClick, true);
-    hideHud();
+  const ctx = shot.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(image, 0, 0);
 
-    try {
-      const result = await new window.EyeDropper().open();
-      if (!result?.sRGBHex) {
-        return;
-      }
-      buildOverlay(result.sRGBHex);
-      await browser.storage.local.set({ [FORMAT_KEY]: format });
-      await copyText(
-        format === "rgb"
-          ? `rgb(${toRgb(result.sRGBHex).r}, ${toRgb(result.sRGBHex).g}, ${toRgb(result.sRGBHex).b})`
-          : format === "hsl"
-            ? (() => {
-                const h = toHsl(result.sRGBHex);
-                return `hsl(${h.h}, ${h.s}%, ${h.l}%)`;
-              })()
-            : result.sRGBHex.toUpperCase(),
-      );
-    } catch (error) {
-      // The pick was cancelled, there is nothing to report.
-      console.debug("The color was not picked", error);
-    }
+  const overlay = document.createElement("div");
+  overlay.id = OVERLAY_ID;
+  overlay.appendChild(shot);
+
+  const hint = document.createElement("div");
+  hint.className = "lw-cp-hint";
+  hint.textContent = "Click on a color to pick it, Esc to cancel.";
+  overlay.appendChild(hint);
+
+  const loupe = document.createElement("canvas");
+  loupe.className = "lw-cp-loupe";
+  loupe.width = LOUPE_SIZE;
+  loupe.height = LOUPE_SIZE;
+  overlay.appendChild(loupe);
+
+  const readout = document.createElement("div");
+  readout.className = "lw-cp-readout";
+  readout.textContent = "";
+  overlay.appendChild(readout);
+
+  document.documentElement.appendChild(overlay);
+
+  picker = {
+    overlay,
+    shot,
+    ctx,
+    loupe,
+    loupeCtx: loupe.getContext("2d"),
+    readout,
+    hint,
+    format: format || "hex",
   };
 
-  document.addEventListener("click", onClick, true);
+  overlay.addEventListener("mousemove", (event) => {
+    const pixel = pixelUnder(event);
+    if (!pixel) {
+      return;
+    }
+
+    drawLoupe(pixel);
+
+    const values = formatsOf(pixel.r, pixel.g, pixel.b);
+    readout.textContent = values.hex;
+    readout.style.left = `${event.clientX + 18}px`;
+    readout.style.top = `${event.clientY + 18}px`;
+
+    // The loupe goes to the other side of the mouse near the edge of the
+    // screen, so that it is always fully visible.
+    const flipX = event.clientX + LOUPE_SIZE + 30 > window.innerWidth;
+    const flipY = event.clientY + LOUPE_SIZE + 30 > window.innerHeight;
+    loupe.style.left = `${flipX ? event.clientX - LOUPE_SIZE - 18 : event.clientX + 18}px`;
+    loupe.style.top = `${flipY ? event.clientY - LOUPE_SIZE - 18 : event.clientY + 18}px`;
+  });
+
+  overlay.addEventListener("mouseleave", () => {
+    loupe.style.display = "none";
+    readout.style.display = "none";
+  });
+
+  overlay.addEventListener("mouseenter", () => {
+    loupe.style.display = "block";
+    readout.style.display = "block";
+  });
+
+  overlay.addEventListener("click", (event) => {
+    // The page must not react to the click that picks the color.
+    event.preventDefault();
+    event.stopPropagation();
+
+    const pixel = pixelUnder(event);
+    if (!pixel) {
+      return;
+    }
+
+    showResult(pixel, picker.format);
+  });
+
+  overlay.addEventListener("mousedown", (event) => event.preventDefault());
+  overlay.addEventListener("contextmenu", (event) => event.preventDefault());
+  overlay.addEventListener("wheel", (event) => event.preventDefault(), { passive: false });
+
+  const onKey = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      removeOverlay();
+    }
+  };
+  document.addEventListener("keydown", onKey, true);
+  picker.onKey = onKey;
 }
 
 browser.runtime.onMessage.addListener((message) => {
-  if (message?.type !== "librewolf-colorpicker-start") {
+  if (message?.type !== "librewolf-colorpicker-image") {
     return undefined;
   }
-  ensureStyles();
-  startPick(message.format || "hex");
+  startPick(message.dataUrl, message.format || "hex");
   return Promise.resolve({ started: true });
 });

@@ -55,7 +55,7 @@ permission of the site.
 | The extension | What it does | The shortcut |
 | --- | --- | --- |
 | `librewolf-vot@librewolf.net` | Translates the videos of YouTube with the service of Yandex, the sound of the translation is played together with the video. The panel is on the page of the video. | `Alt+T` |
-| `librewolf-colorpicker@librewolf.net` | Picks the color of a pixel of the page, it shows the color and copies it as `HEX`, `RGB` or `HSL`. The lens of the browser is shown while the color is picked. | `Alt+C` |
+| `librewolf-colorpicker@librewolf.net` | Picks the color of a pixel of the page, it shows the color and copies it as `HEX`, `RGB` or `HSL`. The picture of the visible part of the tab is taken, a lens shows the pixels under the mouse. | `Alt+C` |
 | `librewolf-screenshot@librewolf.net` | Cuts a part of the page out, it draws on it with the arrows, the frames, the markers, the blur and the text, and it saves it as a picture, as a pdf or as a single html file. The whole page is taken with a scroll. | `Alt+S` |
 | `librewolf-mcp@librewolf.net` | The console of the agents. It is in the side panel of the browser, it shows the state of the connection with the local server of MCP, the log of the calls, and it takes the task of the agent by voice. | `Alt+M` |
 | `librewolf-darkmode@librewolf.net` | The dark mode of every site, with the settings of the brightness and of the contrast and with the list of the exceptions. | `Alt+D` |
@@ -89,6 +89,16 @@ The policy of the browser in [`settings/distribution/policies.json`](./settings/
 installs the extensions of AMO: KeePassXC-Browser, Wappalyzer, Requestly, JSON Formatter,
 Cookie-Editor and Sourcegraph are turned on, the extension of Hoppscotch is installed and
 is turned off, the user turns it on with two clicks in the menu of the extensions.
+
+### The api of the browser that does not exist
+
+Firefox 160 has no `EyeDropper` api, the one of the standard of the web is not a part of it,
+and there is no `dom.eyedropper.enabled` setting either. The color picker of the fork does not
+use it: the background page takes the picture of the visible part of the tab with
+`tabs.captureVisibleTab()`, the page reads the pixel of the picture with a canvas. The same is
+true of the settings of the browser that were moved to the branch `privacy.clearOnShutdown_v2.`
+in the version 160, the old names are kept in the settings of the fork as well, they are the
+source of the new ones when a profile of an older version is used.
 
 ### The settings of the user
 

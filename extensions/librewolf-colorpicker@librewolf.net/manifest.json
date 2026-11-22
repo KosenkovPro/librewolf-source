@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "LibreWolf Color Picker",
   "description": "Pick a color from any page and copy it as HEX, RGB or HSL.",
-  "version": "1.0.0",
+  "version": "1.0.1",
 
   "browser_specific_settings": {
     "gecko": {
@@ -18,9 +18,20 @@
 
   "permissions": [
     "activeTab",
+    "tabs",
     "scripting",
     "clipboardWrite",
-    "storage"
+    "storage",
+    "<all_urls>"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
   ],
 
   "browser_action": {
