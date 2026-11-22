@@ -7,11 +7,11 @@ const CAPTURE_OPTIONS = { format: "jpeg", quality: 92 };
 /**
  * Captures the visible part of a window.
  *
- * The api of the browser takes the number of the window, not the number of
- * the tab.
+ * The api of the browser has no number of a window, it takes the tab that is
+ * in front of the window that is in front.
  */
-async function captureVisible(windowId) {
-  return browser.tabs.captureVisibleTab({ ...CAPTURE_OPTIONS, windowId });
+async function captureVisible() {
+  return browser.tabs.captureVisibleTab({ ...CAPTURE_OPTIONS });
 }
 
 /** Asks the page for the size of the document. */
@@ -68,7 +68,7 @@ async function captureFullPage(target) {
     // put at the place of the page it was taken at.
     for (let y = 0; y < metrics.height; y += step) {
       await scrollTo(target.tabId, startX, y);
-      const dataUrl = await captureVisible(target.windowId);
+      const dataUrl = await captureVisible();
       pieces.push({ dataUrl, y });
       if (y + metrics.viewportHeight >= metrics.height) {
         break;
@@ -240,7 +240,7 @@ browser.browserAction.onClicked.addListener(async (tab) => {
     return;
   }
   try {
-    const dataUrl = await captureVisible(tab.windowId);
+    const dataUrl = await captureVisible();
     await browser.tabs.sendMessage(tab.id, {
       type: "librewolf-screenshot-show",
       dataUrl,

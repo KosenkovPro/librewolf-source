@@ -215,11 +215,42 @@ function drawLoupe(pixel) {
 /**
  * Puts the color into the buffer of the system.
  *
- * The page cannot always do it by itself, the background page of the
- * extension does it, it is always allowed to write into the buffer.
+ * The page is in front, the buffer of the system can be written to. The
+ * background page of the extension is not in front, it cannot write into the
+ * buffer in the new api of the standard of the web.
  */
 async function copyText(text) {
-  await browser.runtime.sendMessage({ type: "librewolf-colorpicker-copy", text });
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (error) {
+    // The page is not safe, the text is copied the old way.
+  }
+
+  try {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.left = "-9999px";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    const copied = document.execCommand("copy");
+    area.remove();
+    if (copied) {
+      return true;
+    }
+  } catch (error) {
+    console.error("The color could not be copied", error);
+  }
+
+  // The background page of the extension is the last chance.
+  const answer = await browser.runtime.sendMessage({
+    type: "librewolf-colorpicker-copy",
+    text,
+  });
+  return !!answer?.ok;
 }
 
 /** Shows the color that was picked, with the three formats of it. */
@@ -247,8 +278,8 @@ function showResult(pixel, format) {
 
   box.querySelectorAll("button[data-format]").forEach((button) => {
     button.addEventListener("click", async () => {
-      await copyText(values[button.dataset.format]);
-      button.textContent = "Copied";
+      const copied = await copyText(values[button.dataset.format]);
+      button.textContent = copied ? "Copied" : "Not copied";
       setTimeout(() => {
         button.textContent = `Copy ${button.dataset.format.toUpperCase()}`;
       }, 1200);

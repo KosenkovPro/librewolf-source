@@ -17,13 +17,30 @@ async function currentFormat() {
 /**
  * Puts the text into the buffer of the system.
  *
- * The background page of the extension is always allowed to write into the
- * buffer, a page is only allowed to do it when the address is safe.
+ * The background page of the extension is not in front, the new api of the
+ * standard of the web refuses to work there. The old way is tried first, the
+ * page of the extension copies the text itself.
  */
 async function copyText(text) {
   try {
     await navigator.clipboard.writeText(text);
     return true;
+  } catch (error) {
+    // The page is not in front, the old way is left.
+  }
+
+  try {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.left = "-9999px";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    const copied = document.execCommand("copy");
+    area.remove();
+    return copied;
   } catch (error) {
     console.error("The color could not be copied", error);
     return false;
@@ -71,9 +88,9 @@ browser.browserAction.onClicked.addListener(async () => {
 
   try {
     // The picture of the visible part of the tab, without the parts of the
-    // browser itself.
+    // browser itself. The api of the browser has no number of a window, it
+    // takes the tab that is in front of the window that is in front.
     const dataUrl = await browser.tabs.captureVisibleTab({
-      windowId: tab.windowId,
       format: "png",
     });
 

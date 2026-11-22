@@ -111,8 +111,18 @@ const TOOLS = {
 
   async screenshot({ tabId }) {
     const tab = await browser.tabs.get(tabId);
+    // The api of the browser has no number of a window, it takes the tab that
+    // is in front of the window that is in front. The tab is put in front
+    // first, so that the picture is of it.
+    try {
+      await browser.windows.update(tab.windowId, { focused: true });
+      await browser.tabs.update(tabId, { active: true });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    } catch (error) {
+      // The window cannot be put in front, the picture is of the tab that is
+      // in front.
+    }
     const dataUrl = await browser.tabs.captureVisibleTab({
-      windowId: tab.windowId,
       format: "png",
     });
     return { dataUrl };
