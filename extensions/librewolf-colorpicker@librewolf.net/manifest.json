@@ -1,0 +1,37 @@
+{
+  "manifest_version": 2,
+  "name": "LibreWolf Color Picker",
+  "description": "Pick a color from any page and copy it as HEX, RGB or HSL.",
+  "version": "1.0.0",
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "librewolf-colorpicker@librewolf.net",
+      "strict_min_version": "128.0"
+    }
+  },
+
+  "icons": {
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
+  },
+
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "clipboardWrite",
+    "storage"
+  ],
+
+  "browser_action": {
+    "default_title": "Pick a color",
+    "default_icon": "icons/icon.svg"
+  },
+
+  "commands": {
+    "_execute_browser_action": {
+      "suggested_key": { "default": "Alt+C" },
+      "description": "Pick a color from the page"
+    }
+  }
+}

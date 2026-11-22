@@ -27,6 +27,16 @@ cp -vr ../themes/browser/ .
 # Copy our patch icons
 cp -v ../assets/icons/* browser/themes/shared/icons/
 
+# Copy our built-in extensions. The name of the directory in the tree of
+# Firefox does not have the address of the extension in it, the address is
+# only in the manifest of the extension.
+for dir in ../extensions/*/; do
+  name=$(basename "$dir")
+  name=${name%@*}
+  mkdir -p "browser/extensions/$name"
+  cp -a "$dir". "browser/extensions/$name/"
+done
+
 # Copy the right search-config.json-v2 file and search-config-icons file
 cp -v ../assets/search-config-v2.json services/settings/dumps/main/search-config-v2.json
 cp -v ../assets/search-config-icons.json services/settings/dumps/main/search-config-icons.json

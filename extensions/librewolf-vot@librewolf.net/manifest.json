@@ -1,0 +1,56 @@
+{
+  "manifest_version": 2,
+  "name": "LibreWolf Video Translation",
+  "description": "Translates the videos of YouTube with the service of Yandex and plays the translated sound together with the video.",
+  "version": "1.0.0",
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "librewolf-vot@librewolf.net",
+      "strict_min_version": "128.0"
+    }
+  },
+
+  "icons": {
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
+  },
+
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "https://api.browser.yandex.ru/*",
+    "https://*.mds.yandex.net/*",
+    "https://*.yandex.ru/*",
+    "https://*.youtube.com/*",
+    "https://youtu.be/*"
+  ],
+
+  "background": {
+    "scripts": ["background.js", "protobuf.js"]
+  },
+
+  "browser_action": {
+    "default_title": "Translate the video",
+    "default_icon": "icons/icon.svg"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*", "*://youtu.be/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+
+  "content_security_policy": "script-src 'self'; object-src 'self'; connect-src https://api.browser.yandex.ru https://*.mds.yandex.net https://*.yandex.ru",
+
+  "commands": {
+    "_execute_browser_action": {
+      "suggested_key": { "default": "Alt+T" },
+      "description": "Translate the video of the page"
+    }
+  }
+}

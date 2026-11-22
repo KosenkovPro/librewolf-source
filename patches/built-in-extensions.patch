@@ -1,0 +1,17 @@
+Add the built-in extensions of the fork
+---
+--- a/browser/extensions/moz.build
++++ b/browser/extensions/moz.build
+@@ -9,6 +9,12 @@
+     "pictureinpicture",
+     "search-detection",
+     "newtab",
++    "librewolf-colorpicker",
++    "librewolf-darkmode",
++    "librewolf-screenshot",
++    "librewolf-mcp",
++    "librewolf-vot",
++    "librewolf-profile",
+ ]
+ 
+ JAR_MANIFESTS += ["jar.mn"]

@@ -1,0 +1,6 @@
+browser.jar:
+    builtin-addons/librewolf-vot/manifest.json (manifest.json)
+    builtin-addons/librewolf-vot/background.js (background.js)
+    builtin-addons/librewolf-vot/protobuf.js (protobuf.js)
+    builtin-addons/librewolf-vot/content.js (content.js)
+    builtin-addons/librewolf-vot/icons/ (icons/**)

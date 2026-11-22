@@ -1,0 +1,54 @@
+{
+  "manifest_version": 2,
+  "name": "LibreWolf MCP Console",
+  "description": "Connects the browser to a local MCP server, so that the agents of the command line can drive it.",
+  "version": "1.0.0",
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "librewolf-mcp@librewolf.net",
+      "strict_min_version": "128.0"
+    }
+  },
+
+  "icons": {
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
+  },
+
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "webRequest",
+    "clipboardWrite",
+    "microphone",
+    "<all_urls>"
+  ],
+
+  "background": {
+    "scripts": ["background.js"]
+  },
+
+  "browser_action": {
+    "default_title": "MCP console",
+    "default_icon": "icons/icon.svg"
+  },
+
+  "sidebar_action": {
+    "default_title": "LibreWolf MCP Console",
+    "default_panel": "panel.html",
+    "default_icon": "icons/icon.svg",
+    "open_at_install": false
+  },
+
+  "content_security_policy": "script-src 'self'; object-src 'self'; connect-src http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* ws://localhost:*",
+
+  "commands": {
+    "_execute_browser_action": {
+      "suggested_key": { "default": "Alt+M" },
+      "description": "Open the MCP console"
+    }
+  }
+}

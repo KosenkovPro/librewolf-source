@@ -65,6 +65,48 @@
                 "install_url": "https://addons.mozilla.org/firefox/downloads/latest/uBlock0@raymondhill.net/latest.xpi",
                 "installation_mode": "normal_installed",
                 "private_browsing": true
+            },
+            "keepassxc-browser@keepassxc.org": {
+                "install_url": "https://addons.mozilla.org/firefox/downloads/latest/keepassxc-browser@keepassxc.org/latest.xpi",
+                "installation_mode": "normal_installed",
+                "private_browsing": true,
+                "default_area": "navbar"
+            },
+            "wappalyzer@crunchlabz.com": {
+                "install_url": "https://addons.mozilla.org/firefox/downloads/latest/wappalyzer@crunchlabz.com/latest.xpi",
+                "installation_mode": "normal_installed",
+                "private_browsing": true,
+                "default_area": "navbar"
+            },
+            "{79b71847-e663-4ac5-80f2-488c68153a8d}": {
+                "install_url": "https://addons.mozilla.org/firefox/downloads/latest/%7B79b71847-e663-4ac5-80f2-488c68153a8d%7D/latest.xpi",
+                "installation_mode": "normal_installed",
+                "private_browsing": true,
+                "default_area": "navbar"
+            },
+            "{db8ff575-504f-4f3d-a910-07702998d21d}": {
+                "install_url": "https://addons.mozilla.org/firefox/downloads/latest/%7Bdb8ff575-504f-4f3d-a910-07702998d21d%7D/latest.xpi",
+                "installation_mode": "normal_installed",
+                "private_browsing": true,
+                "default_area": "navbar"
+            },
+            "{c3c10168-4186-445c-9c5b-63f12b8e2c87}": {
+                "install_url": "https://addons.mozilla.org/firefox/downloads/latest/%7Bc3c10168-4186-445c-9c5b-63f12b8e2c87%7D/latest.xpi",
+                "installation_mode": "normal_installed",
+                "private_browsing": true,
+                "default_area": "navbar"
+            },
+            "sourcegraph-for-firefox@sourcegraph.com": {
+                "install_url": "https://addons.mozilla.org/firefox/downloads/latest/sourcegraph-for-firefox@sourcegraph.com/latest.xpi",
+                "installation_mode": "normal_installed",
+                "private_browsing": true,
+                "default_area": "navbar"
+            },
+            "postwoman-firefox@postwoman.io": {
+                "install_url": "https://addons.mozilla.org/firefox/downloads/latest/postwoman-firefox@postwoman.io/latest.xpi",
+                "installation_mode": "normal_installed",
+                "private_browsing": true,
+                "default_area": "menupanel"
             }
         },
         "FirefoxHome": {

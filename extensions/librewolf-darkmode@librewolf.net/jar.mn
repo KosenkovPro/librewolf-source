@@ -1,0 +1,7 @@
+browser.jar:
+    builtin-addons/librewolf-darkmode/manifest.json (manifest.json)
+    builtin-addons/librewolf-darkmode/background.js (background.js)
+    builtin-addons/librewolf-darkmode/content.js (content.js)
+    builtin-addons/librewolf-darkmode/popup.html (popup.html)
+    builtin-addons/librewolf-darkmode/popup.js (popup.js)
+    builtin-addons/librewolf-darkmode/icons/ (icons/**)

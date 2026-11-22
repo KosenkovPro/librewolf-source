@@ -1,0 +1,5 @@
+browser.jar:
+    builtin-addons/librewolf-colorpicker/manifest.json (manifest.json)
+    builtin-addons/librewolf-colorpicker/background.js (background.js)
+    builtin-addons/librewolf-colorpicker/content.js (content.js)
+    builtin-addons/librewolf-colorpicker/icons/ (icons/**)

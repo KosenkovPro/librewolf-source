@@ -1,0 +1,6 @@
+browser.jar:
+    builtin-addons/librewolf-screenshot/manifest.json (manifest.json)
+    builtin-addons/librewolf-screenshot/background.js (background.js)
+    builtin-addons/librewolf-screenshot/pdf.js (pdf.js)
+    builtin-addons/librewolf-screenshot/content.js (content.js)
+    builtin-addons/librewolf-screenshot/icons/ (icons/**)

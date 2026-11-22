@@ -1,0 +1,28 @@
+{
+  "manifest_version": 2,
+  "name": "LibreWolf Profile Setup",
+  "description": "Prepares the profile of the browser: the bookmark of Hoppscotch and the state of the extension of Hoppscotch.",
+  "version": "1.0.0",
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "librewolf-profile@librewolf.net",
+      "strict_min_version": "128.0"
+    }
+  },
+
+  "icons": {
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
+  },
+
+  "permissions": [
+    "storage",
+    "bookmarks",
+    "management"
+  ],
+
+  "background": {
+    "scripts": ["background.js"]
+  }
+}
