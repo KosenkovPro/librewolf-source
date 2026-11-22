@@ -2,7 +2,7 @@
 .PHONY: help version release bootstrap build run package tarball clean
 
 VERSION = 160.0.1
-RELEASE = 5
+RELEASE = 6
 
 TARGET=
 

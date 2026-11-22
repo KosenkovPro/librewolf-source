@@ -1,6 +1,7 @@
 browser.jar:
     builtin-addons/librewolf-profile/manifest.json (manifest.json)
     builtin-addons/librewolf-profile/background.js (background.js)
+    builtin-addons/librewolf-profile/content.js (content.js)
     builtin-addons/librewolf-profile/popup.html (popup.html)
     builtin-addons/librewolf-profile/popup.js (popup.js)
     builtin-addons/librewolf-profile/icons/ (icons/**)

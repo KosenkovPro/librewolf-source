@@ -59,7 +59,7 @@ permission of the site.
 | `librewolf-screenshot@librewolf.net` | Cuts a part of the page out, it draws on it with the arrows, the frames, the markers, the blur and the text, and it saves it as a picture, as a pdf or as a single html file. The whole page is taken with a scroll. | `Alt+S` |
 | `librewolf-mcp@librewolf.net` | The console of the agents. It is in the side panel of the browser, it shows the state of the connection with the local server of MCP, the log of the calls, and it takes the task of the agent by voice. | `Alt+M` |
 | `librewolf-darkmode@librewolf.net` | The dark mode of every site, with the settings of the brightness and of the contrast and with the list of the exceptions. | `Alt+D` |
-| `librewolf-profile@librewolf.net` | The setup of the profile: the bookmark of Hoppscotch and the state of the extension of Hoppscotch, it is turned off until the user turns it on with two clicks. | — |
+| `librewolf-profile@librewolf.net` | The setup of the profile: the bookmark of Hoppscotch, the bar of the page of Hoppscotch and the state of the extension of Hoppscotch, it is turned off until the user turns it on with two clicks. | — |
 
 ### The server of the agents
 
@@ -90,11 +90,18 @@ installs the extensions of AMO: KeePassXC-Browser, Wappalyzer, Requestly, JSON F
 Cookie-Editor and Sourcegraph are turned on, the extension of Hoppscotch is installed and
 is turned off, the user turns it on with two clicks.
 
-The two clicks are the button of the extension `librewolf-profile` in the panel of the browser
-and the button in the panel of that extension. Firefox itself does not offer this: the panel
-of the extensions shows only the extensions that are on, and a disabled extension is turned on
-in the manager of the extensions, which is three clicks away. The choice of the user is
-remembered, so the browser does not turn the extension off again at the next start.
+The two clicks are the bookmark of Hoppscotch on the panel of the bookmarks and
+the button of the bar of the page of Hoppscotch. The bar is put on the page by
+the built-in extension of the profile, it says that the extension is off and it
+turns it on. The panel of the extension does the same: the button of the
+extension in the panel of the browser and the button in the panel of the
+extension turn the extension of Hoppscotch on.
+
+Firefox itself does not offer this: the panel of the extensions shows only the
+extensions that are on, and a disabled extension is turned on in the manager of
+the extensions, which is three clicks away. The choice of the user is
+remembered, so the browser does not turn the extension off again at the next
+start.
 
 The extension of Hoppscotch is turned off by the built-in extension `librewolf-profile`, and
 the api of the browser lets it do that only when the caller is required by the policy of the

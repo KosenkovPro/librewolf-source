@@ -19,12 +19,22 @@
   "permissions": [
     "storage",
     "bookmarks",
-    "management"
+    "management",
+    "https://hoppscotch.io/*"
   ],
 
   "background": {
     "scripts": ["background.js"]
   },
+
+  "content_scripts": [
+    {
+      "matches": ["https://hoppscotch.io/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
 
   "browser_action": {
     "default_title": "Profile setup",
