@@ -4,9 +4,14 @@
 
 const CAPTURE_OPTIONS = { format: "jpeg", quality: 92 };
 
-/** Captures the visible part of a tab. */
-async function captureVisible(tabId) {
-  return browser.tabs.captureVisibleTab(tabId, CAPTURE_OPTIONS);
+/**
+ * Captures the visible part of a window.
+ *
+ * The api of the browser takes the number of the window, not the number of
+ * the tab.
+ */
+async function captureVisible(windowId) {
+  return browser.tabs.captureVisibleTab({ ...CAPTURE_OPTIONS, windowId });
 }
 
 /** Asks the page for the size of the document. */
@@ -44,8 +49,8 @@ async function scrollTo(tabId, x, y) {
 /**
  * Captures the whole page and puts the pieces together.
  */
-async function captureFullPage(tabId) {
-  const metrics = await pageMetrics(tabId);
+async function captureFullPage(windowId) {
+  const metrics = await pageMetrics(windowId.tabId);
   if (!metrics) {
     return null;
   }
@@ -57,15 +62,15 @@ async function captureFullPage(tabId) {
 
   try {
     for (let y = 0; y < metrics.height; y += step) {
-      await scrollTo(tabId, startX, startY + y);
-      const dataUrl = await captureVisible(tabId);
+      await scrollTo(windowId.tabId, startX, startY + y);
+      const dataUrl = await captureVisible(windowId.windowId);
       parts.push(dataUrl);
       if (startY + y + metrics.viewportHeight >= metrics.height) {
         break;
       }
     }
   } finally {
-    await scrollTo(tabId, startX, startY);
+    await scrollTo(windowId.tabId, startX, startY);
   }
 
   const images = await Promise.all(
@@ -113,14 +118,34 @@ function dataUrlToBytes(dataUrl) {
   return { mime, bytes };
 }
 
-/** The size of a picture, it is read by the background page itself. */
-function pictureSize(dataUrl) {
-  return new Promise((resolve) => {
-    const image = new Image();
-    image.onload = () => resolve({ width: image.width, height: image.height });
-    image.onerror = () => resolve({ width: 0, height: 0 });
-    image.src = dataUrl;
+/**
+ * Turns a picture into a jpeg.
+ *
+ * The writer of the pdf files puts the picture into the file as a jpeg, the
+ * picture of the page comes as a png.
+ */
+async function toJpeg(dataUrl) {
+  const image = await new Promise((resolve) => {
+    const element = new Image();
+    element.onload = () => resolve(element);
+    element.onerror = () => resolve(null);
+    element.src = dataUrl;
   });
+
+  if (!image) {
+    return { mime: "image/jpeg", bytes: new Uint8Array(0), width: 0, height: 0 };
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = image.width;
+  canvas.height = image.height;
+  const context = canvas.getContext("2d");
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(image, 0, 0);
+
+  const { mime, bytes } = dataUrlToBytes(canvas.toDataURL("image/jpeg", 0.92));
+  return { mime, bytes, width: image.width, height: image.height };
 }
 
 async function download(dataUrl, name) {
@@ -192,7 +217,7 @@ browser.browserAction.onClicked.addListener(async (tab) => {
     return;
   }
   try {
-    const dataUrl = await captureVisible(tab.id);
+    const dataUrl = await captureVisible(tab.windowId);
     await browser.tabs.sendMessage(tab.id, {
       type: "librewolf-screenshot-show",
       dataUrl,
@@ -208,7 +233,8 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
 
   switch (message?.type) {
     case "librewolf-screenshot-full-page": {
-      const dataUrl = await captureFullPage(tabId);
+      const windowId = { tabId, windowId: sender.tab?.windowId };
+      const dataUrl = await captureFullPage(windowId);
       return { dataUrl };
     }
 
@@ -224,11 +250,12 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     }
 
     case "librewolf-screenshot-pdf": {
-      const { bytes } = dataUrlToBytes(message.dataUrl);
-      // The pdf writer wants the size of the picture, the reader of the image
-      // gives it to us. The background page is a page of its own, it can read
-      // the picture without asking the page of the user.
-      const { width, height } = await pictureSize(message.dataUrl);
+      // The writer of the pdf files takes the picture as a jpeg, the picture
+      // of the page comes as a png.
+      const { bytes, width, height } = await toJpeg(message.dataUrl);
+      if (!bytes.length) {
+        throw new Error("The picture of the page could not be read");
+      }
       const pdf = LibreWolfPdf.buildPdf(
         [{ data: bytes, width, height }],
         [{ width, height }],

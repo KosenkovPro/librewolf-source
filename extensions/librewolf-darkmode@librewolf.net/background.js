@@ -100,10 +100,21 @@ async function refreshTab(tab) {
   }
 }
 
+/**
+ * The tab in the front of the window.
+ *
+ * The panel of the extension has no page of its own, the message of it does
+ * not carry a tab.
+ */
+async function activeTab() {
+  const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+  return tabs[0] || null;
+}
+
 browser.runtime.onMessage.addListener(async (message, sender) => {
   if (message?.type === "librewolf-darkmode-get-state") {
     const settings = await getSettings();
-    const tab = sender.tab;
+    const tab = sender.tab || (await activeTab());
     const domain = domainOf(tab?.url || "");
     const state = stateFor(settings, domain);
     return {
@@ -135,7 +146,14 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     }
 
     await saveSettings(settings);
-    await refreshTab(sender.tab);
+
+    // The page that is in the front is the one that has to be changed.
+    const tab = sender.tab || (await activeTab());
+    await refreshTab(tab);
+    if (tab?.id) {
+      await badgeFor(tab);
+    }
+
     return { ok: true, settings };
   }
 

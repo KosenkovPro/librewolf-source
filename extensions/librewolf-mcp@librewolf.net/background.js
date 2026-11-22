@@ -110,11 +110,17 @@ const TOOLS = {
   },
 
   async screenshot({ tabId }) {
-    const dataUrl = await browser.tabs.captureVisibleTab(tabId, { format: "png" });
+    const tab = await browser.tabs.get(tabId);
+    const dataUrl = await browser.tabs.captureVisibleTab({
+      windowId: tab.windowId,
+      format: "png",
+    });
     return { dataUrl };
   },
 
   async console_logs({ tabId }) {
+    // The messages of the console are kept while an agent is connected.
+    await installConsoleHook(tabId);
     const result = await browser.scripting.executeScript({
       target: { tabId },
       func: () => window.__librewolfConsole || [],
@@ -137,6 +143,39 @@ async function runTool(name, args) {
   return tool(args || {});
 }
 
+/**
+ * Puts the keeper of the messages of the console into the page.
+ *
+ * It is only done while an agent is connected to the browser, the pages of
+ * the browser stay fast without it.
+ */
+async function installConsoleHook(tabId) {
+  if (!tabId) {
+    return;
+  }
+  try {
+    await browser.scripting.executeScript({
+      target: { tabId },
+      files: ["console.js"],
+    });
+  } catch (error) {
+    // The page does not take scripts, there is nothing to keep there.
+  }
+}
+
+/** Puts the keeper of the messages of the console into every page. */
+async function installConsoleHookEverywhere() {
+  if (!connected) {
+    return;
+  }
+  const tabs = await browser.tabs.query({});
+  for (const tab of tabs) {
+    if (tab.id) {
+      await installConsoleHook(tab.id);
+    }
+  }
+}
+
 async function connect() {
   const settings = await getSettings();
   disconnect();
@@ -153,6 +192,7 @@ async function connect() {
     connected = true;
     log("info", "the server of the agents is connected");
     broadcast({ event: "status", connected: true });
+    installConsoleHookEverywhere();
   };
 
   source.onerror = () => {
@@ -228,6 +268,13 @@ browser.webRequest.onCompleted.addListener(
   },
   { urls: ["<all_urls>"] },
 );
+
+// The messages of the console of a page are kept while an agent is connected.
+browser.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
+  if (connected && changeInfo.status === "complete") {
+    await installConsoleHook(tabId);
+  }
+});
 
 browser.runtime.onMessage.addListener(async (message, sender) => {
   switch (message?.type) {

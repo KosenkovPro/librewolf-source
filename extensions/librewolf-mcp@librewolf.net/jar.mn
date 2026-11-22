@@ -1,6 +1,7 @@
 browser.jar:
     builtin-addons/librewolf-mcp/manifest.json (manifest.json)
     builtin-addons/librewolf-mcp/background.js (background.js)
+    builtin-addons/librewolf-mcp/console.js (console.js)
     builtin-addons/librewolf-mcp/panel.html (panel.html)
     builtin-addons/librewolf-mcp/panel.js (panel.js)
     builtin-addons/librewolf-mcp/icons/ (icons/**)
