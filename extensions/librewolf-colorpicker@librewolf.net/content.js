@@ -17,6 +17,7 @@ const STYLES = `
     all: initial;
     position: fixed;
     inset: 0;
+    display: block;
     z-index: 2147483647;
     cursor: crosshair;
     font-family: system-ui, sans-serif;
@@ -262,6 +263,7 @@ function showResult(pixel, format) {
   picker.readout.remove();
   picker.hint.remove();
   picker.overlay.appendChild(box);
+  picker.picked = true;
 
   // The color of the pixel is copied right away, in the format of the last
   // time, the buttons of the panel copy it in the other formats.
@@ -288,6 +290,11 @@ async function startPick(dataUrl, format) {
   shot.width = image.naturalWidth || image.width;
   shot.height = image.naturalHeight || image.height;
 
+  if (!shot.width || !shot.height) {
+    console.error("The picture of the page is empty");
+    return;
+  }
+
   const ctx = shot.getContext("2d", { willReadFrequently: true });
   ctx.drawImage(image, 0, 0);
 
@@ -304,11 +311,13 @@ async function startPick(dataUrl, format) {
   loupe.className = "lw-cp-loupe";
   loupe.width = LOUPE_SIZE;
   loupe.height = LOUPE_SIZE;
+  loupe.style.display = "none";
   overlay.appendChild(loupe);
 
   const readout = document.createElement("div");
   readout.className = "lw-cp-readout";
   readout.textContent = "";
+  readout.style.display = "none";
   overlay.appendChild(readout);
 
   document.documentElement.appendChild(overlay);
@@ -325,6 +334,10 @@ async function startPick(dataUrl, format) {
   };
 
   overlay.addEventListener("mousemove", (event) => {
+    if (picker.picked) {
+      return;
+    }
+
     const pixel = pixelUnder(event);
     if (!pixel) {
       return;
@@ -334,6 +347,7 @@ async function startPick(dataUrl, format) {
 
     const values = formatsOf(pixel.r, pixel.g, pixel.b);
     readout.textContent = values.hex;
+    readout.style.display = "block";
     readout.style.left = `${event.clientX + 18}px`;
     readout.style.top = `${event.clientY + 18}px`;
 
@@ -341,6 +355,7 @@ async function startPick(dataUrl, format) {
     // screen, so that it is always fully visible.
     const flipX = event.clientX + LOUPE_SIZE + 30 > window.innerWidth;
     const flipY = event.clientY + LOUPE_SIZE + 30 > window.innerHeight;
+    loupe.style.display = "block";
     loupe.style.left = `${flipX ? event.clientX - LOUPE_SIZE - 18 : event.clientX + 18}px`;
     loupe.style.top = `${flipY ? event.clientY - LOUPE_SIZE - 18 : event.clientY + 18}px`;
   });
@@ -360,6 +375,10 @@ async function startPick(dataUrl, format) {
     event.preventDefault();
     event.stopPropagation();
 
+    if (picker.picked) {
+      return;
+    }
+
     const pixel = pixelUnder(event);
     if (!pixel) {
       return;
@@ -377,6 +396,14 @@ async function startPick(dataUrl, format) {
       event.preventDefault();
       event.stopPropagation();
       removeOverlay();
+      return;
+    }
+
+    // The picture of the page is taken once, the page must not move under it.
+    const scrollKeys = [" ", "PageUp", "PageDown", "Home", "End", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+    if (scrollKeys.includes(event.key)) {
+      event.preventDefault();
+      event.stopPropagation();
     }
   };
   document.addEventListener("keydown", onKey, true);
